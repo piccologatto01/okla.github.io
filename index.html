@@ -2,6 +2,5009 @@
 <html>
 <body>
 <h1>Hello World</h1>
+  <h3>
+## Задачи   
+> 1) Условие: «Реализовать программу для выполнения следующих математических   
+> операций с целочисленным, байтовым и вещественным типами данных: сложение, вычитание, умножение, деление, деление по модулю (остаток), модуль числа, возведение в степень. Все данные вводятся с клавиатуры (класс Scanner, System.in, nextint).» По данному условию необходимо реализовать программу с интерактивным консольным меню, (т.е. вывод списка действий по цифрам. При этом при нажатии на цифру у нас должно выполняться определенное действие). При этом в программе данные пункты должны называться следующим образом:   
+
+- Вывести все таблицы из PostgreSQL.   
+- Создать таблицу в PostgreSQL.   
+- Сложение чисел, результат сохранить в PostgreSQL с последующим выводом в консоль.   
+- Вычитание чисел, результат сохранить в PostgreSQL с последующим выводом в консоль.   
+- Умножение чисел, результат сохранить в PostgreSQL с последующим выводом в консоль.   
+- Деление чисел, результат сохранить в PostgreSQL с последующим выводом в консоль.   
+- Деление чисел по модулю (остаток), результат сохранить в PostgreSQL с последующим   
+- выводом в консоль.   
+- Возведение числа в модуль, результат сохранить в PostgreSQL с последующим выводом в   
+- консоль.   
+- Возведение числа в степень, результат сохранить в PostgreSQL с последующим выводом в консоль.   
+- Сохранить все данные (вышеполученные результаты) из PostgreSQL в Excel и вывести на экран.   
+   
+```
+package com.example.exam;
+
+import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Scanner;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class Task1MathAndDB {
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER = "admin";
+    private static final String PASSWORD = "1234";
+
+    public static void main(String[] args) {
+        Scanner scaner = new Scanner(System.in);
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)){
+            while (true){
+                System.out.println("Выберите действие:");
+                System.out.println("1. Вывести все таблицы из PostgreSQL.");
+                System.out.println("2. Создать таблицу в PostgreSQL.");
+                System.out.println("3. Сложение чисел.");
+                System.out.println("4. Вычитание чисел.");
+                System.out.println("5. Умножение чисел.");
+                System.out.println("6. Деление чисел.");
+                System.out.println("7. Деление чисел по модулю (остаток).");
+                System.out.println("8. Возведение числа в модуль.");
+                System.out.println("9. Возведение числа в степень.");
+                System.out.println("10. Сохранить все данные в Excel.");
+                System.out.println("0. Выход.");
+
+                int choice = scaner.nextInt();
+                switch (choice) {
+                    case 1:
+                        showTables(conn);
+                        break;
+                    case 2:
+                        createTable(conn);
+                        break;
+                    case 3:
+                        performOperation(conn, "addition");
+                        break;
+                    case 4:
+                        performOperation(conn, "subtraction");
+                        break;
+                    case 5:
+                        performOperation(conn, "multiplication");
+                        break;
+                    case 6:
+                        performOperation(conn, "division");
+                        break;
+                    case 7:
+                        performOperation(conn, "modulus");
+                        break;
+                    case 8:
+                        performOperation(conn, "absolute");
+                        break;
+                    case 9:
+                        performOperation(conn, "power");
+                        break;
+                    case 10:
+                        saveToExcel(conn);
+                        break;
+                    case 0:
+                        System.out.println("Выход из программы");
+                        return;
+                    default:
+                        System.out.println("Неверный выбор. Попробуйте снова.");
+                }
+            }
+        } catch(SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void showTables (Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("select table_name FROM information_schema.tables WHERE table_schema='public'");
+        System.out.println("Таблицы в БД:");
+        while (rs.next()){
+            System.out.println(rs.getString("table_name"));
+        }
+    }
+
+    private static void createTable(Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate("create table if not exists results(id serial primary key, operation varchar(255), result numeric)");
+        System.out.println("Таблица 'results' создана или уже существует.");
+    }
+
+    private static void performOperation(Connection conn, String operation) throws SQLException {
+        Scanner scanner = new Scanner(System.in);
+        double result = 0;
+        double num1;
+
+        // Запрашиваем первое число
+        System.out.print("Введите число: ");
+        num1 = scanner.nextDouble();
+
+        switch (operation) {
+            case "addition":
+            case "subtraction":
+            case "multiplication":
+            case "division":
+            case "modulus":
+                // Для этих операций запрашиваем второе число
+                System.out.print("Введите второе число: ");
+                double num2 = scanner.nextDouble();
+
+                switch (operation) {
+                    case "addition":
+                        result = num1 + num2;
+                        break;
+                    case "subtraction":
+                        result = num1 - num2;
+                        break;
+                    case "multiplication":
+                        result = num1 * num2;
+                        break;
+                    case "division":
+                        if (num2 != 0) {
+                            result = num1 / num2;
+                        } else {
+                            System.out.println("Ошибка: деление на ноль.");
+                            return;
+                        }
+                        break;
+                    case "modulus":
+                        result = num1 % num2;
+                        break;
+                }
+                break;
+
+            case "absolute":
+                result = Math.abs(num1);
+                break;
+
+            case "power":
+                // Для возведения в степень запрашиваем степень
+                System.out.print("Введите степень: ");
+                double power = scanner.nextDouble();
+                result = Math.pow(num1, power);
+                break;
+
+            default:
+                System.out.println("Неизвестная операция.");
+                return;
+        }
+        System.out.println("Результат: " + result);
+        saveResultToDB(conn, operation, result);
+    }
+
+    private static void saveResultToDB(Connection conn, String operation, double result) throws SQLException {
+        String query = "insert into results(operation, result) values(?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)){
+            pstmt.setString(1, operation);
+            pstmt.setDouble(2, result);
+            pstmt.executeUpdate();
+            System.out.println("Результат сохранен в БД");
+        }
+    }
+    private static void saveToExcel(Connection conn) throws SQLException {
+        String query = "select * from results";
+        try (Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+            Workbook workbook = new XSSFWorkbook()){
+
+            Sheet sheet = workbook.createSheet("Results");
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Операция");
+            headerRow.createCell(1).setCellValue("Результат");
+
+            int rowNum = 1;
+            while (rs.next()) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(rs.getString("operation"));
+                row.createCell(1).setCellValue(rs.getDouble("result"));
+            }
+
+            try (FileOutputStream fileOut = new FileOutputStream("results.xlsx")) {
+                workbook.write(fileOut);
+                System.out.println("Данные сохранены в Excel файл 'results.xlsx'.");
+            }
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+```
+> 2) Напишите программу, в которой из строки "I have 3 cats, 4 dogs, and 1 turtle" отбираются   
+> цифры. Из этих цифр формируется массив.   
+
+```
+package com.example.exam;
+
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class Task2NumFromString {
+    public static void main(String[] args) {
+        String str = "I have 3 cats, 4 dogs, and 1 turtle";
+        ArrayList<Integer> result = new ArrayList();
+
+        Pattern pattern = Pattern.compile("\\d+");
+        Matcher matcher = pattern.matcher(str);
+
+        while (matcher.find()) {
+            // Преобразуем найденную строку в число и добавляем в список
+            result.add(Integer.parseInt(matcher.group()));
+        }
+        System.out.println(result);
+    }
+
+}
+
+```
+> 3) Разработайте программу, которая выводит в консоль все цифры, входящие в натуральное число n. К примеру, если дано число 2359, то в консоль выводятся отдельно числа 2, 3, 5, 9.   
+
+```
+package com.example.exam;
+
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Task3DigitsInNum {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Введите натуральное число: ");
+        String input = scanner.nextLine();
+        ArrayList<Character> result = new ArrayList();
+        if (input.matches("\\d+")) {
+            System.out.println("Цифры в числе " + input + ":");
+            // Проходим по каждому символу строки и выводим его
+            for (char digit : input.toCharArray()) {
+                System.out.println(digit);
+                result.add(digit); // записываем цифры в массив
+            }
+        } else {
+            System.out.println("Ошибка: Введите натуральное число.");
+        }
+
+        scanner.close();
+        System.out.println(result); // выводим массив цифр 
+    }
+}
+
+```
+> 4) Написать калькулятор для строковых выражений вида "<число> <операция> <число>", где <число> - положительное целое число меньшее 10, записанное словами, например, "четыре", <арифметическая операция> - одна из операций "плюс", "минус", "умножить". Результат выполнения операции вернуть в виде текстового представления числа. Пример: "пять плюс четыре" ⟶ "девять".   
+
+```
+package com.example.exam;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+
+public class Task4SringMath {
+    private static final Map<String, Integer> wordsToNumbers = new HashMap<>();
+    private static final Map<Integer, String> numbersToWords = new HashMap<>();
+
+    static {
+        // Инициализация мапы для преобразования слов в числа
+        wordsToNumbers.put("ноль", 0);
+        wordsToNumbers.put("один", 1);
+        wordsToNumbers.put("два", 2);
+        wordsToNumbers.put("три", 3);
+        wordsToNumbers.put("четыре", 4);
+        wordsToNumbers.put("пять", 5);
+        wordsToNumbers.put("шесть", 6);
+        wordsToNumbers.put("семь", 7);
+        wordsToNumbers.put("восемь", 8);
+        wordsToNumbers.put("девять", 9);
+
+        // Инициализация мапы для преобразования чисел обратно в слова
+        numbersToWords.put(0, "ноль");
+        numbersToWords.put(1, "один");
+        numbersToWords.put(2, "два");
+        numbersToWords.put(3, "три");
+        numbersToWords.put(4, "четыре");
+        numbersToWords.put(5, "пять");
+        numbersToWords.put(6, "шесть");
+        numbersToWords.put(7, "семь");
+        numbersToWords.put(8, "восемь");
+        numbersToWords.put(9, "девять");
+    }
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Введите выражение: ");
+        String operation = scanner.nextLine();
+
+        String[] numbers = operation.split(" ");
+        if (numbers.length != 3) {
+            System.out.println("Ошибка: неверный формат ввода.");
+            return;
+        }
+
+        String num1 = numbers[0];
+        String symbol = numbers[1];
+        String num2 = numbers[2];
+
+        Integer number1 = wordsToNumbers.get(num1);
+        Integer number2 = wordsToNumbers.get(num2);
+
+        if (number1 == null || number2 == null) {
+            System.out.println("Ошибка, неправильно написано одно из чисел");
+            return;
+        }
+        int result = 0;
+        switch(symbol){
+            case "плюс":
+                result = number1 + number2;
+                break;
+            case "минус":
+                result = number1 - number2;
+                break;
+            case "умножить":
+                result = number1 * number2;
+                break;
+            default:
+                System.out.println("Ошибка, неверная операция");
+                return;
+        }
+        String resultWord = numbersToWords.get(result);
+        System.out.println("Ответ: " + resultWord);
+    }
+}
+
+```
+   
+> 5) Напишите программную реализацию бинарного дерева поиска.   
+
+```
+package com.example.exam;
+
+class Node {
+    int value;
+    Node left, right;
+
+    public Node(int item) {
+        value = item;
+        left = right = null;
+    }
+}
+
+class BinarySearchTree {
+    Node root;
+
+    // Вставка нового узла
+    void insert(int value) {
+        root = insertRec(root, value);
+    }
+
+    // Рекурсивная функция для вставки нового узла
+    Node insertRec(Node root, int value) {
+        // Если дерево пустое, возвращаем новый узел
+        if (root == null) {
+            root = new Node(value);
+            return root;
+        }
+
+        // В противном случае, рекурсивно спускаемся по дереву
+        if (value < root.value) {
+            root.left = insertRec(root.left, value);
+        } else if (value > root.value) {
+            root.right = insertRec(root.right, value);
+        }
+
+        // Возвращаем (неизмененный) указатель узла
+        return root;
+    }
+
+    // Поиск узла с заданным значением
+    boolean search(int value) {
+        return searchRec(root, value);
+    }
+
+    // Рекурсивная функция для поиска узла
+    boolean searchRec(Node root, int value) {
+        // Если узел пустой или значение узла равно искомому
+        if (root == null) {
+            return false;
+        }
+        if (root.value == value) {
+            return true;
+        }
+
+        // Если значение меньше, ищем в левом поддереве
+        if (value < root.value) {
+            return searchRec(root.left, value);
+        }
+
+        // Если значение больше, ищем в правом поддереве
+        return searchRec(root.right, value);
+    }
+
+    // Обход дерева в порядке возрастания (инфиксный обход)
+    void inorder() {
+        inorderRec(root);
+    }
+
+    // Рекурсивная функция для обхода дерева
+    void inorderRec(Node root) {
+        if (root != null) {
+            inorderRec(root.left);
+            System.out.print(root.value + " ");
+            inorderRec(root.right);
+        }
+    }
+
+    // Пример использования
+    public static void main(String[] args) {
+        BinarySearchTree bst = new BinarySearchTree();
+
+        // Вставка узлов
+        bst.insert(50);
+        bst.insert(30);
+        bst.insert(20);
+        bst.insert(40);
+        bst.insert(70);
+        bst.insert(60);
+        bst.insert(80);
+
+        // Обход дерева
+        System.out.println("Обход дерева в порядке возрастания:");
+        bst.inorder();
+
+        // Поиск узлов
+        System.out.println("\n\nПоиск узлов:");
+        System.out.println("Поиск 40: " + bst.search(40)); // true
+        System.out.println("Поиск 90: " + bst.search(90)); // false
+    }
+}
+```
+> 6) Разработайте программу, которая выводит буквы английского алфавита, используя цикл while в MySQL/PostgreSQL.   
+
+```
+package com.example.exam;
+
+import java.sql.*;
+
+public class Task6AlphabetToDB {
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER = "admin";
+    private static final String PASSWORD = "1234";
+
+    public static void main(String[] args) {
+        char letter = 'A'; // Начинаем с буквы 'A'
+
+        // Подключение к базе данных
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("CREATE TABLE alphabet (\n" +
+                    "    id SERIAL PRIMARY KEY,\n" +
+                    "    letter CHAR(1) NOT NULL\n" +
+                    ");");
+            // Подготовка SQL-запроса для вставки буквы
+            String sql = "INSERT INTO alphabet (letter) VALUES (?)";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                // Используем цикл while для вывода и записи букв от 'A' до 'Z'
+                while (letter <= 'Z') {
+                    System.out.println(letter); // Выводим текущую букву
+                    preparedStatement.setString(1, String.valueOf(letter)); // Устанавливаем букву в запрос
+                    preparedStatement.executeUpdate(); // Выполняем запрос
+                    letter++; // Переходим к следующей букве
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+//    private static void createTable(Connection conn) throws SQLException {
+//        Statement stmt = conn.createStatement();
+//        stmt.executeUpdate("CREATE TABLE alphabet (\n" +
+//                "    id SERIAL PRIMARY KEY,\n" +
+//                "    letter CHAR(1) NOT NULL\n" +
+//                ");");
+//    }
+}
+
+```
+> 7) Напишите программу, которая будет выводить в консоль введённое слово 6 раз и сохранять в MySQL/PostgreSQL.   
+
+```
+package com.example.exam;
+
+import java.sql.*;
+import java.util.Scanner;
+
+public class Task7Repeat6TimesSaveToDB {
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER = "admin";
+    private static final String PASSWORD = "1234";
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Введите слово: ");
+        String input = scanner.nextLine();
+        // Подключение к базе данных
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("CREATE TABLE repeat (\n" +
+                    "    id SERIAL PRIMARY KEY,\n" +
+                    "    word VARCHAR(255) NOT NULL\n" +
+                    ");");
+            // Подготовка SQL-запроса для вставки буквы
+            String sql = "INSERT INTO repeat (word) VALUES (?)";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                for (int i = 0; i < 6; i++) {
+                    System.out.println(input); // Выводим слово
+                    preparedStatement.setString(1, input); // Устанавливаем слово в запрос
+                    preparedStatement.executeUpdate(); // Выполняем запрос
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            scanner.close();
+        }
+    }
+}
+
+
+```
+> 8) Разработать программу для вывода на экран кубов первых десяти положительных чисел.   
+
+```
+package com.example.exam;
+
+public class Task8CubesOfTenNumbers {
+    public static void main(String[] args) {
+        System.out.println("Кубы первых десяти положительных чисел:");
+
+        // Цикл для вычисления и вывода кубов
+        for (int i = 1; i <= 10; i++) {
+            int cube = i * i * i; // Вычисляем куб числа
+            System.out.println("Куб числа " + i + " равен " + cube);
+        }
+    }
+}
+
+```
+> 9) Напишите программу, которая по дате определяет день недели, на который эта дата приходится.   
+
+```
+package com.example.exam;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Scanner;
+
+public class Task9DayOfWeekFinder {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Введите дату в формате yyyy-MM-dd: ");
+        String inputDate = scanner.nextLine();
+
+        // Определяем формат даты
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        try {
+            // Преобразуем строку в LocalDate
+            LocalDate date = LocalDate.parse(inputDate, formatter);
+            // Получаем день недели
+            String dayOfWeek = date.getDayOfWeek().toString();
+            // Выводим результат
+            System.out.println("День недели: " + dayOfWeek);
+        } catch (DateTimeParseException e) {
+            System.out.println("Ошибка: неверный формат даты. Пожалуйста, используйте формат yyyy-MM-dd.");
+        } finally {
+            scanner.close();
+        }
+    }
+}
+
+
+```
+> 10) Написать класс, который при введении даты в формате ДД.ММ.ГГ (к примеру, 22.10.20) выводит номер недели. Даты начиная с 2020 по 2022 годы. К примеру, первая неделя в 2020 году: 1-5 января, вторая неделя – 6-12 января. Значит при вводе 08.01.20 вывод должен быть: Неделя 2.   
+
+```
+package com.example.exam;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Scanner;
+
+public class Task10WeekNumberFinder {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Введите дату в формате ДД.ММ.ГГ (например, 22.10.20): ");
+        String inputDate = scanner.nextLine();
+
+        // Определяем формат даты
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy");
+
+        try {
+            // Преобразуем строку в LocalDate
+            LocalDate date = LocalDate.parse(inputDate, formatter);
+
+            // Получаем номер недели
+            int weekNumber = date.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+
+            // Выводим результат
+            System.out.println("Неделя " + weekNumber);
+        } catch (DateTimeParseException e) {
+            System.out.println("Ошибка: неверный формат даты. Пожалуйста, используйте формат ДД.ММ.ГГ.");
+        } finally {
+            scanner.close();
+        }
+    }
+}
+
+
+```
+   
+> 11) Разработайте программу, реализующую рекурсивное вычисление факториала.   
+
+```
+package com.example.exam;
+
+import java.util.Scanner;
+
+public class Task11RecursiveFactorial {
+    // Метод для рекурсивного вычисления факториала
+    public static long factorial(int n) {
+        if (n == 0) {
+            return 1; // Базовый случай: 0! = 1
+        } else {
+            return n * factorial(n - 1); // Рекурсивный вызов
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Введите неотрицательное целое число: ");
+
+        int number = scanner.nextInt();
+
+        if (number < 0) {
+            System.out.println("Ошибка: факториал не определен для отрицательных чисел.");
+        } else {
+            long result = factorial(number);
+            System.out.println("Факториал " + number + " равен " + result);
+        }
+
+        scanner.close();
+    }
+}
+
+```
+> 12) Разработать класс-оболочку для числового типа double. Реализовать статические методы сложения, деления, возведения в степень.   
+
+```
+package com.example.exam;
+
+public class Task12DoubleWrapper {
+    // Метод для сложения двух чисел
+    public static double add(double a, double b) {
+        return a + b;
+    }
+
+    // Метод для деления двух чисел
+    public static double divide(double a, double b) {
+        if (b == 0) {
+            throw new IllegalArgumentException("Ошибка: деление на ноль.");
+        }
+        return a / b;
+    }
+
+    // Метод для возведения числа в степень
+    public static double power(double base, double exponent) {
+        return Math.pow(base, exponent);
+    }
+
+    public static void main(String[] args) {
+        double num1 = 5.0;
+        double num2 = 3.0;
+
+        // Примеры использования методов
+        double sum = Task12DoubleWrapper.add(num1, num2);
+        double division = Task12DoubleWrapper.divide(num1, num2);
+        double power = Task12DoubleWrapper.power(num1, num2);
+
+        System.out.println("Сумма: " + sum);
+        System.out.println("Деление: " + division);
+        System.out.println("Возведение в степень: " + power);
+    }
+}
+
+```
+> 13) Разработать программу, которая заполняет двумерный массив случайными положительными числами в диапазоне от 1 до 100 до тех пор, пока сумма граничных элементов не станет равной 666. Пользователь вначале вводит размер матрицы.   
+
+```
+package com.example.exam;
+
+import java.util.Random;
+import java.util.Scanner;
+
+public class Task13MatrixFiller {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Random random = new Random();
+
+        // Ввод размеров матрицы
+        System.out.print("Введите количество строк: ");
+        int rows = scanner.nextInt();
+        System.out.print("Введите количество столбцов: ");
+        int cols = scanner.nextInt();
+
+        // Создание двумерного массива
+        int[][] matrix = new int[rows][cols];
+
+        // Переменная для хранения суммы граничных элементов
+        int boundarySum = 0;
+
+        // Заполнение массива до тех пор, пока сумма граничных элементов не станет равной 666
+        while (boundarySum != 666) {
+            // Заполнение массива случайными числами
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    matrix[i][j] = random.nextInt(100) + 1; // Случайное число от 1 до 100
+                }
+            }
+
+            // Вычисление суммы граничных элементов
+            boundarySum = 0;
+
+            // Суммируем граничные элементы
+            for (int i = 0; i < rows; i++) {
+                boundarySum += matrix[i][0]; // Первый столбец
+                boundarySum += matrix[i][cols - 1]; // Последний столбец
+            }
+            for (int j = 0; j < cols; j++) {
+                boundarySum += matrix[0][j]; // Первый ряд
+                boundarySum += matrix[rows - 1][j]; // Последний ряд
+            }
+
+            // Убираем дублирование угловых элементов
+            boundarySum -= matrix[0][0]; // Убираем первый элемент
+            boundarySum -= matrix[0][cols - 1]; // Убираем последний элемент первого ряда
+            boundarySum -= matrix[rows - 1][0]; // Убираем первый элемент последнего ряда
+            boundarySum -= matrix[rows - 1][cols - 1]; // Убираем последний элемент
+
+            // Выводим текущую матрицу и сумму граничных элементов
+            System.out.println("Текущая матрица:");
+            printMatrix(matrix);
+            System.out.println("Сумма граничных элементов: " + boundarySum);
+        }
+
+        System.out.println("Сумма граничных элементов равна 666. Завершение программы.");
+        scanner.close();
+    }
+
+    // Метод для вывода матрицы
+    private static void printMatrix(int[][] matrix) {
+        for (int[] row : matrix) {
+            for (int value : row) {
+                System.out.print(value + "\t");
+            }
+            System.out.println();
+        }
+    }
+}
+
+```
+> 14) Разработать программу, в которой требуется создать класс, описывающий геометрическую фигуру – треугольник. Методами класса должны быть – вычисление площади, периметра. Создать класс-наследник, определяющий прямоугольный треугольник.   
+
+```
+package com.example.exam;
+
+public class Task14Triangle {
+    protected double a; // Сторона a
+    protected double b; // Сторона b
+    protected double c; // Сторона c
+
+    // Конструктор
+    public Task14Triangle(double a, double b, double c) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+    }
+
+    // Метод для вычисления периметра
+    public double perimeter() {
+        return a + b + c;
+    }
+
+    // Метод для вычисления площади с использованием формулы Герона
+    public double area() {
+        double s = perimeter() / 2; // Полупериметр
+        return Math.sqrt(s * (s - a) * (s - b) * (s - c)); // Формула Герона
+    }
+}
+
+class RightTriangle extends Task14Triangle {
+    // Конструктор
+    public RightTriangle(double base, double height) {
+        super(base, height, Math.sqrt(base * base + height * height)); // Вычисляем гипотенузу
+    }
+
+    // Метод для вычисления площади
+    @Override
+    public double area() {
+        return (a * b) / 2; // Площадь прямоугольного треугольника
+    }
+}
+
+ // это в отдельный файл - это тест работы программы
+package com.example.exam;
+
+public class Main {
+    public static void main(String[] args) {
+        // Создаем треугольник
+        Task14Triangle triangle = new Task14Triangle(3, 4, 5);
+        System.out.println("Периметр треугольника: " + triangle.perimeter());
+        System.out.println("Площадь треугольника: " + triangle.area());
+
+        // Создаем прямоугольный треугольник
+        RightTriangle rightTriangle = new RightTriangle(3, 4);
+        System.out.println("Периметр прямоугольного треугольника: " + rightTriangle.perimeter());
+        System.out.println("Площадь прямоугольного треугольника: " + rightTriangle.area());
+    }
+}
+
+
+```
+> 15) Разработать программу, в которой требуется создать абстрактный класс. В этом абстрактном классе определить абстрактные методы вычисления функции в определенной точке. Создать классы-наследники абстрактного класса, описывающими уравнения прямой и параболы. Программа должна выводить в консоль значение функции при вводе определенного значения.   
+
+```
+package com.example.exam;
+
+import java.util.Scanner;
+
+// Абстрактный класс
+abstract class Function {
+    // Абстрактный метод для вычисления функции в определенной точке
+    public abstract double evaluate(double x);
+}
+
+// Класс, описывающий уравнение прямой
+class LinearFunction extends Function {
+    private double m; // Угловой коэффициент
+    private double b; // Свободный член
+
+    // Конструктор
+    public LinearFunction(double m, double b) {
+        this.m = m;
+        this.b = b;
+    }
+
+    // Реализация метода evaluate
+    @Override
+    public double evaluate(double x) {
+        return m * x + b; // y = mx + b
+    }
+}
+
+// Класс, описывающий уравнение параболы
+class QuadraticFunction extends Function {
+    private double a; // Коэффициент при x^2
+    private double b; // Коэффициент при x
+    private double c; // Свободный член
+
+    // Конструктор
+    public QuadraticFunction(double a, double b, double c) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+    }
+
+    // Реализация метода evaluate
+    @Override
+    public double evaluate(double x) {
+        return a * x * x + b * x + c; // y = ax^2 + bx + c
+    }
+}
+
+public class Task15AbstractFunction {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Запрашиваем у пользователя значение x
+        System.out.print("Введите значение x: ");
+        double x = scanner.nextDouble();
+
+        // Создаем экземпляры функций
+        LinearFunction linearFunction = new LinearFunction(2, 3); // Пример: y = 2x + 3
+        QuadraticFunction quadraticFunction = new QuadraticFunction(1, -2, 1); // Пример: y = x^2 - 2x + 1
+
+        // Вычисляем и выводим значения функций
+        System.out.println("Значение линейной функции при x = " + x + ": " + linearFunction.evaluate(x));
+        System.out.println("Значение квадратичной функции при x = " + x + ": " + quadraticFunction.evaluate(x));
+
+        scanner.close();
+    }
+}
+
+
+```
+> 16) Создать интерфейс Progress c методами вычисления любого элемента прогрессии и суммы прогрессии. Разработать классы арифметической и геометрической прогрессии, которые   
+> имплементируют интерфейс Progress.   
+
+```
+package com.example.exam;
+
+interface Progress {
+    double getElement(int n); // Метод для вычисления n-го элемента прогрессии
+    double getSum(int n); // Метод для вычисления суммы первых n элементов прогрессии
+}
+// Класс, описывающий арифметическую прогрессию
+class ArithmeticProgression implements Progress {
+    private double firstTerm; // Первый элемент прогрессии
+    private double commonDifference; // Разность прогрессии
+
+    // Конструктор
+    public ArithmeticProgression(double firstTerm, double commonDifference) {
+        this.firstTerm = firstTerm;
+        this.commonDifference = commonDifference;
+    }
+
+    // Реализация метода для вычисления n-го элемента
+    @Override
+    public double getElement(int n) {
+        return firstTerm + (n - 1) * commonDifference; // a_n = a_1 + (n - 1) * d
+    }
+
+    // Реализация метода для вычисления суммы первых n элементов
+    @Override
+    public double getSum(int n) {
+        return (n / 2.0) * (2 * firstTerm + (n - 1) * commonDifference); // S_n = n/2 * (2a_1 + (n - 1)d)
+    }
+}
+
+// Класс, описывающий геометрическую прогрессию
+class GeometricProgression implements Progress {
+    private double firstTerm; // Первый элемент прогрессии
+    private double commonRatio; // Знаменатель прогрессии
+
+    // Конструктор
+    public GeometricProgression(double firstTerm, double commonRatio) {
+        this.firstTerm = firstTerm;
+        this.commonRatio = commonRatio;
+    }
+
+    // Реализация метода для вычисления n-го элемента
+    @Override
+    public double getElement(int n) {
+        return firstTerm * Math.pow(commonRatio, n - 1); // a_n = a_1 * r^(n - 1)
+    }
+
+    // Реализация метода для вычисления суммы первых n элементов
+    @Override
+    public double getSum(int n) {
+        if (commonRatio == 1) {
+            return firstTerm * n; // Если r = 1, S_n = n * a_1
+        } else {
+            return firstTerm * (1 - Math.pow(commonRatio, n)) / (1 - commonRatio); // S_n = a_1 * (1 - r^n) / (1 - r)
+        }
+    }
+}
+
+public class Task16ArithmAndGeomProgression {
+    public static void main(String[] args) {
+        // Пример использования арифметической прогрессии
+        Progress arithmeticProgression = new ArithmeticProgression(2, 3); // a_1 = 2, d = 3
+        int n = 5; // Пятый элемент
+        System.out.println("Арифметическая прогрессия:");
+        System.out.println("5-й элемент: " + arithmeticProgression.getElement(n));
+        System.out.println("Сумма первых 5 элементов: " + arithmeticProgression.getSum(n));
+
+        // Пример использования геометрической прогрессии
+        Progress geometricProgression = new GeometricProgression(2, 3); // a_1 = 2, r = 3
+        System.out.println("\nГеометрическая прогрессия:");
+        System.out.println("5-й элемент: " + geometricProgression.getElement(n));
+        System.out.println("Сумма первых 5 элементов: " + geometricProgression.getSum(n));
+    }
+}
+
+```
+> 17) Разработать интерфейс InArray, в котором предусмотреть метод сложения двух массивов. Создать класс ArraySum, в котором имплементируется метод сложения массивов.   
+> Создать класс OrArray, в котором метод сложения массивов имплементируется как логическая операция ИЛИ между элементами массива.   
+
+```
+package com.example.exam;
+
+import java.util.Arrays;
+import java.util.Scanner;
+
+// Интерфейс InArray
+interface InArray {
+    int[] addArrays(int[] array1, int[] array2); // Метод для сложения двух массивов
+}
+
+// Класс, описывающий сложение массивов
+class ArraySum implements InArray {
+    @Override
+    public int[] addArrays(int[] array1, int[] array2) {
+        // Определяем размер результирующего массива
+        int length = Math.min(array1.length, array2.length);
+        int[] result = new int[length];
+
+        // Сложение массивов
+        for (int i = 0; i < length; i++) {
+            result[i] = array1[i] + array2[i];
+        }
+
+        return result;
+    }
+}
+
+// Класс, описывающий логическую операцию ИЛИ между массивами
+class OrArray implements InArray {
+    @Override
+    public int[] addArrays(int[] array1, int[] array2) {
+        // Определяем размер результирующего массива
+        int length = Math.min(array1.length, array2.length);
+        int[] result = new int[length];
+
+        // Логическая операция ИЛИ между массивами
+        for (int i = 0; i < length; i++) {
+            result[i] = (array1[i] != 0 || array2[i] != 0) ? 1 : 0; // Если хотя бы один элемент не равен 0, результат 1
+        }
+
+        return result;
+    }
+}
+
+public class Task17InArray {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Ввод первого массива
+        System.out.print("Введите размер первого массива: ");
+        int size1 = scanner.nextInt();
+        int[] array1 = new int[size1];
+        System.out.println("Введите элементы первого массива:");
+        for (int i = 0; i < size1; i++) {
+            array1[i] = scanner.nextInt();
+        }
+
+        // Ввод второго массива
+        System.out.print("Введите размер второго массива: ");
+        int size2 = scanner.nextInt();
+        int[] array2 = new int[size2];
+        System.out.println("Введите элементы второго массива:");
+        for (int i = 0; i < size2; i++) {
+            array2[i] = scanner.nextInt();
+        }
+
+        // Сложение массивов с использованием ArraySum
+        InArray arraySum = new ArraySum();
+        int[] sumResult = arraySum.addArrays(array1, array2);
+        System.out.println("Результат сложения массивов: " + Arrays.toString(sumResult));
+
+        // Сложение массивов с использованием OrArray
+        InArray orArray = new OrArray();
+        int[] orResult = orArray.addArrays(array1, array2);
+        System.out.println("Результат логической операции ИЛИ: " + Arrays.toString(orResult));
+
+        scanner.close();
+    }
+}
+
+```
+> 18) Создать класс Binary для работы с двоичными числами фиксированной длины. Число должно быть массивом тип char, каждый элемент которого принимает значение 0 или 1. Младший бит имеет младший индекс. Отрицательные числа представляются в дополнительном коде. Дополнительный код получается инверсией всех битов с прибавлением 1 к младшему биту. Например, +1 – это в двоичном коде будет выглядеть, как 0000 0001. А -1 в двоичном коде будет выглядеть, как 1111 1110 + 0000 0001 = 1111 1111. Создать методы конвертации десятичного числа в массив и обратно.   
+
+```
+package com.example.exam;
+
+public class Task18Binary {
+    private char[] bits; // Массив для хранения двоичного числа
+    private int length; // Длина двоичного числа
+
+    // Конструктор
+    public Task18Binary(int length) {
+        this.length = length;
+        this.bits = new char[length];
+    }
+
+    // Метод для конвертации десятичного числа в двоичное
+    public void fromDecimal(int decimal) {
+        // Если число отрицательное, получаем дополнительный код
+        if (decimal < 0) {
+            decimal = (1 << length) + decimal; // Преобразуем в дополнительный код
+        }
+
+        for (int i = 0; i < length; i++) {
+            bits[i] = (char) ((decimal & (1 << i)) != 0 ? '1' : '0');
+        }
+    }
+
+    // Метод для конвертации двоичного числа в десятичное
+    public int toDecimal() {
+        int decimal = 0;
+
+        // Проверяем, является ли число отрицательным
+        if (bits[length - 1] == '1') {
+            // Если старший бит равен 1, то число отрицательное
+            int inverted = 0;
+            for (int i = 0; i < length; i++) {
+                inverted |= (bits[i] == '0' ? 1 : 0) << i; // Инвертируем биты
+            }
+            decimal = -((inverted + 1) & ((1 << length) - 1)); // Получаем десятичное значение
+        } else {
+            // Если число положительное
+            for (int i = 0; i < length; i++) {
+                decimal += (bits[i] == '1' ? 1 : 0) << i;
+            }
+        }
+
+        return decimal;
+    }
+
+    // Метод для получения двоичного представления
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(bits[i]);
+        }
+        return sb.reverse().toString(); // Возвращаем строку в правильном порядке
+    }
+
+    public static void main(String[] args) {
+        Task18Binary binary = new Task18Binary(8); // Создаем двоичное число длиной 8 бит
+
+        // Пример конвертации из десятичного в двоичное
+        binary.fromDecimal(1);
+        System.out.println("Десятичное 1 в двоичном: " + binary.toString());
+
+        binary.fromDecimal(-1);
+        System.out.println("Десятичное -1 в двоичном: " + binary.toString());
+
+        binary.fromDecimal(5);
+        System.out.println("Десятичное 5 в двоичном: " + binary.toString());
+
+        // Пример конвертации из двоичного в десятичное
+        binary.fromDecimal(-5);
+        System.out.println("Двоичное " + binary.toString() + " в десятичном: " + binary.toDecimal());
+    }
+}
+
+```
+> 19) Создать класс Matrix для работы с двумерными матрицами. Создать методы для генерации нулевой матрицы, а также для генерации матрицы со случайными величинами – применить Math.random(). Реализовать метод сложения матриц.   
+
+```
+package com.example.exam;
+
+import java.util.Arrays;
+
+public class Task19Matrix {
+    private int rows; // Количество строк
+    private int cols; // Количество столбцов
+    private double[][] data; // Двумерный массив для хранения матрицы
+
+    // Конструктор для создания матрицы заданного размера
+    public Task19Matrix(int rows, int cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.data = new double[rows][cols];
+    }
+
+    // Метод для генерации нулевой матрицы
+    public static Task19Matrix generateZeroMatrix(int rows, int cols) {
+        return new Task19Matrix(rows, cols); // Все элементы по умолчанию равны 0
+    }
+
+    // Метод для генерации матрицы со случайными величинами
+    public static Task19Matrix generateRandomMatrix(int rows, int cols) {
+        Task19Matrix matrix = new Task19Matrix(rows, cols);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                matrix.data[i][j] = Math.random(); // Заполнение случайными числами от 0 до 1
+            }
+        }
+        return matrix;
+    }
+
+    // Метод для сложения двух матриц
+    public Task19Matrix add(Task19Matrix other) {
+        if (this.rows != other.rows || this.cols != other.cols) {
+            throw new IllegalArgumentException("Матрицы должны иметь одинаковые размеры для сложения.");
+        }
+
+        Task19Matrix result = new Task19Matrix(this.rows, this.cols);
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < this.cols; j++) {
+                result.data[i][j] = this.data[i][j] + other.data[i][j];
+            }
+        }
+        return result;
+    }
+
+    // Метод для вывода матрицы в строковом формате
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (double[] row : data) {
+            sb.append(Arrays.toString(row)).append("\n");
+        }
+        return sb.toString();
+    }
+
+    // Пример использования класса Matrix
+    public static void main(String[] args) {
+        // Генерация нулевой матрицы
+        Task19Matrix zeroMatrix = Task19Matrix.generateZeroMatrix(3, 3);
+        System.out.println("Нулевая матрица:");
+        System.out.println(zeroMatrix);
+
+        // Генерация матрицы со случайными величинами
+        Task19Matrix randomMatrix = Task19Matrix.generateRandomMatrix(3, 3);
+        System.out.println("Случайная матрица:");
+        System.out.println(randomMatrix);
+
+        // Сложение матриц
+        Task19Matrix sumMatrix = zeroMatrix.add(randomMatrix);
+        System.out.println("Сумма матриц:");
+        System.out.println(sumMatrix);
+    }
+}
+
+```
+> 20) Реализовать класс MyMath для работы с числами. Реализовать статический метод класса MyMath.round(), который округляет дробь до целого числа. Также статический метод abs(), который находит модуль числа. Статический метод MyMath.pow() для нахождения степени   
+> числа. Библиотеку Math не использовать.   
+
+```
+package com.example.exam;
+
+public class Task20MyMath {
+    // Метод для округления дробного числа до целого
+    public static int round(double value) {
+        if (value >= 0) {
+            return (int)(value + 0.5); // Округление вверх для положительных чисел
+        } else {
+            return (int)(value - 0.5); // Округление вниз для отрицательных чисел
+        }
+    }
+
+    // Метод для нахождения модуля числа
+    public static double abs(double value) {
+        return (value < 0) ? -value : value; // Если число отрицательное, возвращаем его противоположное значение
+    }
+
+    // Метод для нахождения степени числа
+    public static double pow(double base, int exponent) {
+        if (exponent == 0) {
+            return 1; // Любое число в степени 0 равно 1
+        }
+
+        double result = 1;
+        boolean isNegativeExponent = exponent < 0; // Проверяем, является ли показатель степени отрицательным
+        exponent = Math.abs(exponent); // Берем модуль показателя степени
+
+        for (int i = 0; i < exponent; i++) {
+            result *= base; // Умножаем основание на себя exponent раз
+        }
+
+        return isNegativeExponent ? 1 / result : result; // Если степень отрицательная, возвращаем 1 / результат
+    }
+
+    // Пример использования класса MyMath
+    public static void main(String[] args) {
+        // Примеры использования методов
+        double number1 = 3.6;
+        double number2 = -3.6;
+        double base = 2;
+        int exponent = 3;
+
+        System.out.println("Округление " + number1 + ": " + Task20MyMath.round(number1));
+        System.out.println("Округление " + number2 + ": " + Task20MyMath.round(number2));
+        System.out.println("Модуль " + number2 + ": " + Task20MyMath.abs(number2));
+        System.out.println(base + " в степени " + exponent + ": " + Task20MyMath.pow(base, exponent));
+        System.out.println(base + " в степени " + -exponent + ": " + Task20MyMath.pow(base, -exponent));
+    }
+}
+
+```
+> 21) Разработать программу для игры «Угадайка». Программа загадывает случайное число от 1 до 10, требуется его отгадать с трех попыток. После каждой попытки, если результат неверен,   
+> игроку выводится сообщение, меньше или больше названное игроком число, чем загаданное. Сет заканчивается или если игрок угадывает число, или если исчерпывает три попытки, не угадав. Игра должна быть выполнена в бесконечном цикле, и продолжается до тех пор, пока на предложение «Сыграем еще раз?» игрок не напишет «Нет».   
+
+```
+package com.example.exam;
+
+import java.util.Random;
+import java.util.Scanner;
+
+public class Task21Ugadaika {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Random random = new Random();
+        boolean playAgain;
+
+        do {
+            // Генерация случайного числа от 1 до 10
+            int numberToGuess = random.nextInt(10) + 1;
+            int attempts = 3;
+            boolean hasGuessed = false;
+
+            System.out.println("Я загадал число от 1 до 10. Попробуй угадать!");
+
+            while (attempts > 0) {
+                System.out.print("Введите ваше число: ");
+                int playerGuess = scanner.nextInt();
+
+                if (playerGuess == numberToGuess) {
+                    System.out.println("Поздравляю! Вы угадали число!");
+                    hasGuessed = true;
+                    break;
+                } else {
+                    attempts--;
+                    if (attempts > 0) {
+                        if (playerGuess < numberToGuess) {
+                            System.out.println("Загаданное число больше.");
+                        } else {
+                            System.out.println("Загаданное число меньше.");
+                        }
+                        System.out.println("У вас осталось " + attempts + " попытки(ок).");
+                    }
+                }
+            }
+
+            if (!hasGuessed) {
+                System.out.println("Вы исчерпали все попытки. Загаданное число было: " + numberToGuess);
+            }
+
+            // Спрашиваем, хочет ли игрок сыграть еще раз
+            System.out.print("Сыграем еще раз? (Да/Нет): ");
+            String response = scanner.next();
+            playAgain = response.equalsIgnoreCase("Да");
+
+        } while (playAgain);
+
+        System.out.println("Спасибо за игру!");
+        scanner.close();
+    }
+}
+
+```
+> 22) Разработайте программу-генератор рабочего календаря. Слесарь механосборочного цеха работает сутки через трое. Если смена попадает на воскресенье, то переносится на понедельник. По введенной дате программа должна генерировать расписание из дат на текущий месяц на 2022 год.   
+
+```
+package com.example.exam;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Scanner;
+
+public class Task22CalendarSchedule {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+        // Запрашиваем у пользователя начальную дату
+        System.out.print("Введите дату в формате ДД.ММ.ГГГГ (например, 01.01.2022): ");
+        String inputDate = scanner.nextLine();
+        LocalDate startDate;
+
+        // Проверяем корректность введенной даты
+        try {
+            startDate = LocalDate.parse(inputDate, formatter);
+            if (startDate.getYear() != 2022) {
+                System.out.println("Пожалуйста, введите дату в 2022 году.");
+                return;
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка: неверный формат даты.");
+            return;
+        }
+
+        // Генерация расписания
+        System.out.println("Рабочий календарь на " + startDate.getMonth() + " " + startDate.getYear() + ":");
+        LocalDate currentDate = startDate;
+
+        // Устанавливаем начальную смену
+        int workDays = 0; // Счетчик рабочих дней
+        while (currentDate.getMonth() == startDate.getMonth()) {
+            // Проверяем, попадает ли смена на воскресенье
+            if (currentDate.getDayOfWeek().getValue() == 7) {
+                // Если воскресенье, переносим на понедельник
+                currentDate = currentDate.plusDays(1);
+                continue; // Пропускаем эту итерацию
+            }
+
+            // Если это рабочий день, выводим дату
+            System.out.println("Рабочий день: " + currentDate.format(formatter));
+            workDays++;
+
+            // Переход к следующему рабочему дню (сутки через трое)
+            currentDate = currentDate.plusDays(4); // 1 рабочий день + 3 выходных
+        }
+
+        System.out.println("Всего рабочих дней: " + workDays);
+        scanner.close();
+    }
+}
+
+```
+> 23) Разработать класс для представления комплексных чисел с возможностью задания вещественной и мнимой частей в виде массива из двух чисел типа int. Определить методы для выполнения операций сложения, вычитания и умножения комплексных чисел.   
+
+```
+package com.example.exam;
+
+public class Task23ComplexNumber {
+    private int[] parts; // Массив для хранения вещественной и мнимой частей
+
+    // Конструктор
+    public Task23ComplexNumber(int real, int imaginary) {
+        this.parts = new int[2];
+        this.parts[0] = real; // Вещественная часть
+        this.parts[1] = imaginary; // Мнимая часть
+    }
+
+    // Метод для получения вещественной части
+    public int getReal() {
+        return parts[0];
+    }
+
+    // Метод для получения мнимой части
+    public int getImaginary() {
+        return parts[1];
+    }
+
+    // Метод для сложения комплексных чисел
+    public Task23ComplexNumber add(Task23ComplexNumber other) {
+        int realPart = this.getReal() + other.getReal();
+        int imaginaryPart = this.getImaginary() + other.getImaginary();
+        return new Task23ComplexNumber(realPart, imaginaryPart);
+    }
+
+    // Метод для вычитания комплексных чисел
+    public Task23ComplexNumber subtract(Task23ComplexNumber other) {
+        int realPart = this.getReal() - other.getReal();
+        int imaginaryPart = this.getImaginary() - other.getImaginary();
+        return new Task23ComplexNumber(realPart, imaginaryPart);
+    }
+
+    // Метод для умножения комплексных чисел
+    public Task23ComplexNumber multiply(Task23ComplexNumber other) {
+        int realPart = this.getReal() * other.getReal() - this.getImaginary() * other.getImaginary();
+        int imaginaryPart = this.getReal() * other.getImaginary() + this.getImaginary() * other.getReal();
+        return new Task23ComplexNumber(realPart, imaginaryPart);
+    }
+
+    // Метод для вывода комплексного числа в строковом формате
+    @Override
+    public String toString() {
+        return parts[0] + (parts[1] >= 0 ? " + " : " ") + parts[1] + "i";
+    }
+
+    // Пример использования класса ComplexNumber
+    public static void main(String[] args) {
+        Task23ComplexNumber num1 = new Task23ComplexNumber(3, 4); // 3 + 4i
+        Task23ComplexNumber num2 = new Task23ComplexNumber(1, 2); // 1 + 2i
+
+        // Сложение
+        Task23ComplexNumber sum = num1.add(num2);
+        System.out.println("Сумма: " + sum); // (3 + 4i) + (1 + 2i) = 4 + 6i
+
+        // Вычитание
+        Task23ComplexNumber difference = num1.subtract(num2);
+        System.out.println("Разность: " + difference); // (3 + 4i) - (1 + 2i) = 2 + 2i
+
+        // Умножение
+        Task23ComplexNumber product = num1.multiply(num2);
+        System.out.println("Произведение: " + product); // (3 + 4i) * (1 + 2i) = -5 + 10i
+    }
+}
+
+```
+> 24) Создайте класс Form - оболочку для создания и ввода пароля. Он должен иметь методы input, submit, password. Создайте класс SmartForm, который будет наследовать от Form и сохранять значения password.   
+
+```
+package com.example.exam;
+
+import java.util.Scanner;
+
+public class Task24Form {
+    private String password; // Хранит пароль
+
+    // Метод для ввода пароля
+    public void input() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Введите пароль: ");
+        this.password = scanner.nextLine();
+    }
+
+    // Метод для отправки пароля
+    public void submit() {
+        if (password != null && !password.isEmpty()) {
+            System.out.println("Пароль успешно отправлен.");
+        } else {
+            System.out.println("Пароль не введен.");
+        }
+    }
+
+    // Метод для получения пароля
+    public String getPassword() {
+        return password;
+    }
+}
+
+// Класс SmartForm, наследующий от Form
+class SmartForm extends Task24Form {
+    private String savedPassword; // Хранит сохраненный пароль
+
+    // Переопределяем метод submit для сохранения пароля
+    @Override
+    public void submit() {
+        super.submit(); // Вызываем метод родительского класса
+        savedPassword = getPassword(); // Сохраняем пароль
+        System.out.println("Пароль сохранен: " + savedPassword);
+    }
+
+    // Метод для получения сохраненного пароля
+    public String getSavedPassword() {
+        return savedPassword;
+    }
+}
+
+```
+```
+// Task24Form - пример использования классов
+public class Main {
+    public static void main(String[] args) {
+        SmartForm smartForm = new SmartForm();
+
+        // Ввод пароля
+        smartForm.input();
+
+        // Отправка пароля
+        smartForm.submit();
+
+        // Получение сохраненного пароля
+        System.out.println("Сохраненный пароль: " + smartForm.getSavedPassword());
+    }
+}
+```
+> 25) Сделайте класс User, в котором будут следующие protected поля - name (имя), age (возраст), public методы setName, getName, setAge, getAge. Сделайте класс Worker, который наследует от класса User и вносит дополнительное private поле salary (зарплата), а также методы public getSalary и setSalary. Создайте объект этого класса 'Иван', возраст 25, зарплата 1000. Создайте второй объект этого класса 'Вася', возраст 26, зарплата 2000. Найдите сумму зарплата Ивана и Васи. Сделайте класс Student, который наследует от класса User и вносит дополнительные private поля стипендия, курс, а также геттеры и сеттеры для них.   
+
+```
+package com.example.exam;
+
+public class Task25User {
+    protected String name; // Имя
+    protected int age; // Возраст
+
+    // Метод для установки имени
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    // Метод для получения имени
+    public String getName() {
+        return name;
+    }
+
+    // Метод для установки возраста
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    // Метод для получения возраста
+    public int getAge() {
+        return age;
+    }
+}
+
+// Класс Worker, наследующий от User
+class Worker extends Task25User {
+    private double salary; // Зарплата
+
+    // Метод для установки зарплаты
+    public void setSalary(double salary) {
+        this.salary = salary;
+    }
+
+    // Метод для получения зарплаты
+    public double getSalary() {
+        return salary;
+    }
+}
+
+// Класс Student, наследующий от User
+class Student extends Task25User {
+    private double scholarship; // Стипендия
+    private int course; // Курс
+
+    // Метод для установки стипендии
+    public void setScholarship(double scholarship) {
+        this.scholarship = scholarship;
+    }
+
+    // Метод для получения стипендии
+    public double getScholarship() {
+        return scholarship;
+    }
+
+    // Метод для установки курса
+    public void setCourse(int course) {
+        this.course = course;
+    }
+
+    // Метод для получения курса
+    public int getCourse() {
+        return course;
+    }
+}
+
+```
+```
+// Task25User
+public class Main {
+    public static void main(String[] args) {
+        // Создаем объекты Worker
+        Worker ivan = new Worker();
+        ivan.setName("Иван");
+        ivan.setAge(25);
+        ivan.setSalary(1000);
+
+        Worker vasya = new Worker();
+        vasya.setName("Вася");
+        vasya.setAge(26);
+        vasya.setSalary(2000);
+
+        // Находим сумму зарплат
+        double totalSalary = ivan.getSalary() + vasya.getSalary();
+        System.out.println("Сумма зарплат Ивана и Васи: " + totalSalary);
+
+        // Пример использования класса Student
+        Student student = new Student();
+        student.setName("Алексей");
+        student.setAge(20);
+        student.setScholarship(1500);
+        student.setCourse(2);
+
+        System.out.println("Студент: " + student.getName() + ", Возраст: " + student.getAge() +
+                ", Стипендия: " + student.getScholarship() + ", Курс: " + student.getCourse());
+    }
+}
+```
+> 26) Создайте класс ColorModel для определения цветовой модели. Разработайте подклассы RGBconverter и CMYKconverter для конвертации цвета из одной модели в другую. Конвертация CMYK в RGB производится по следующим формулам: R = 255 × (1-C) × (1-K), G =   
+> 255×(1-M)×(1-K),B=255×(1-Y)×(1-K)(гдеR–red,G–green,B–black,C–Cyan,M-Magenta,Y - Yellow, K- Black))   
+
+```
+package com.example.exam;
+
+public class Task26ColorModel {
+    // Метод для получения RGB значений (переопределяется в подклассах)
+    public int[] getRGB() {
+        return new int[3]; // Возвращает массив RGB
+    }
+
+    // Метод для получения CMYK значений (переопределяется в подклассах)
+    public float[] getCMYK() {
+        return new float[4]; // Возвращает массив CMYK
+    }
+}
+
+// Подкласс RGBConverter
+class RGBConverter extends Task26ColorModel {
+    private int red;
+    private int green;
+    private int blue;
+
+    // Конструктор
+    public RGBConverter(int red, int green, int blue) {
+        this.red = red;
+        this.green = green;
+        this.blue = blue;
+    }
+
+    // Метод для получения RGB значений
+    @Override
+    public int[] getRGB() {
+        return new int[]{red, green, blue};
+    }
+
+    // Метод для конвертации RGB в CMYK
+    public float[] toCMYK() {
+        float c, m, y, k;
+
+        // Нормализуем RGB значения
+        float r = red / 255f;
+        float g = green / 255f;
+        float b = blue / 255f;
+
+        // Вычисляем K
+        k = 1 - Math.max(r, Math.max(g, b));
+
+        // Если K == 1, то C, M, Y равны 0
+        if (k < 1) {
+            c = (1 - r - k) / (1 - k);
+            m = (1 - g - k) / (1 - k);
+            y = (1 - b - k) / (1 - k);
+        } else {
+            c = 0;
+            m = 0;
+            y = 0;
+        }
+
+        return new float[]{c, m, y, k};
+    }
+}
+
+// Подкласс CMYKConverter
+class CMYKConverter extends Task26ColorModel {
+    private float cyan;
+    private float magenta;
+    private float yellow;
+    private float black;
+
+    // Конструктор
+    public CMYKConverter(float cyan, float magenta, float yellow, float black) {
+        this.cyan = cyan;
+        this.magenta = magenta;
+        this.yellow = yellow;
+        this.black = black;
+    }
+
+    // Метод для получения CMYK значений
+    @Override
+    public float[] getCMYK() {
+        return new float[]{cyan, magenta, yellow, black};
+    }
+
+    // Метод для конвертации CMYK в RGB
+    public int[] toRGB() {
+        int r = (int) (255 * (1 - cyan) * (1 - black));
+        int g = (int) (255 * (1 - magenta) * (1 - black));
+        int b = (int) (255 * (1 - yellow) * (1 - black));
+        return new int[]{r, g, b};
+    }
+}
+```
+```
+public class Main {
+    public static void main(String[] args) {
+        // Пример конвертации RGB в CMYK
+        RGBConverter rgbConverter = new RGBConverter(255, 0, 0); // Красный цвет
+        float[] cmyk = rgbConverter.toCMYK();
+        System.out.printf("RGB (255, 0, 0) в CMYK: C=%.2f, M=%.2f, Y=%.2f, K=%.2f%n", cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
+
+        // Пример конвертации CMYK в RGB
+        CMYKConverter cmykConverter = new CMYKConverter(0, 1, 1, 0); // Пурпурный цвет
+        int[] rgb = cmykConverter.toRGB();
+        System.out.printf("CMYK (0, 1, 1, 0) в RGB: R=%d, G=%d, B=%d%n", rgb[0], rgb[1], rgb[2]);
+    }
+}
+```
+> 27) Создайте класс Number для конвертации десятичного числа в бинарный, восьмеричный, шестнадцатеричный вид. Реализовать в виде статических методов класса. Числа вводятся с клавиатуры с запросом в какой численный вид конвертировать.   
+
+```
+package com.example.exam;
+
+import java.util.Scanner;
+
+public class Task27Number {
+    // Метод для конвертации в бинарный вид
+    public static String toBinary(int decimal) {
+        return Integer.toBinaryString(decimal);
+    }
+
+    // Метод для конвертации в восьмеричный вид
+    public static String toOctal(int decimal) {
+        return Integer.toOctalString(decimal);
+    }
+
+    // Метод для конвертации в шестнадцатеричный вид
+    public static String toHexadecimal(int decimal) {
+        return Integer.toHexString(decimal).toUpperCase(); // Приводим к верхнему регистру
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Запрашиваем у пользователя десятичное число
+        System.out.print("Введите десятичное число: ");
+        int decimalNumber = scanner.nextInt();
+
+        // Запрашиваем у пользователя систему счисления для конвертации
+        System.out.print("Введите систему счисления для конвертации (2 - бинарная, 8 - восьмеричная, 16 - шестнадцатеричная): ");
+        int base = scanner.nextInt();
+
+        // Выполняем конвертацию в зависимости от выбора пользователя
+        switch (base) {
+            case 2:
+                System.out.println("Бинарное представление: " + toBinary(decimalNumber));
+                break;
+            case 8:
+                System.out.println("Восьмеричное представление: " + toOctal(decimalNumber));
+                break;
+            case 16:
+                System.out.println("Шестнадцатеричное представление: " + toHexadecimal(decimalNumber));
+                break;
+            default:
+                System.out.println("Ошибка: неверный выбор системы счисления.");
+                break;
+        }
+
+        scanner.close();
+    }
+}
+
+```
+> 28) Разработать класс Neuron для реализации нейронной сети из двух нейронов и одного выхода. Сделать функцию прямого распространения с функцией активации в виде сигмоиды.   
+
+```
+package com.example.exam;
+
+import java.util.Random;
+
+public class Task28Neuron {
+    private double[] weights; // Веса для двух входов
+    private double bias; // Смещение
+    private Random random;
+
+    // Конструктор
+    public Task28Neuron() {
+        random = new Random();
+        weights = new double[2]; // Два веса
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] = random.nextDouble(); // Инициализация весов случайными значениями
+        }
+        bias = random.nextDouble(); // Инициализация смещения случайным значением
+    }
+
+    // Сигмоидная функция активации
+    private double sigmoid(double x) {
+        return 1 / (1 + Math.exp(-x));
+    }
+
+    // Прямое распространение
+    public double forward(double[] inputs) {
+        if (inputs.length != weights.length) {
+            throw new IllegalArgumentException("Количество входов должно совпадать с количеством весов.");
+        }
+        double z = 0.0;
+        for (int i = 0; i < inputs.length; i++) {
+            z += inputs[i] * weights[i]; // Линейная комбинация
+        }
+        z += bias; // Добавление смещения
+        return sigmoid(z); // Применение функции активации
+    }
+
+    // Пример использования класса
+    public static void main(String[] args) {
+        Task28Neuron neuron = new Task28Neuron();
+
+        // Входные данные (например, два входа)
+        double[] inputs = {0.5, 0.8};
+
+        // Получение выхода нейрона
+        double output = neuron.forward(inputs);
+
+        System.out.println("Выход нейрона: " + output);
+    }
+}
+
+```
+> 29) Напишите программу, которая заполняет списочный массив случайными числами типа Integer (значения этих чисел были от 1 до 100). Список должен содержать 100 элементов. Затем отсортируйте по убыванию список и выведите первые 10 значений в консоль. Результаты сохраните в MySQL/PostgreSQL.   
+
+```
+package org.example;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.sql.Statement;
+
+public class RandomNumberDatabase {
+    public static void main(String[] args) {
+        // Создаём список случайных чисел
+        List<Integer> randomNumbers = new ArrayList<>();
+        Random random = new Random();
+
+        for (int i = 0; i < 100; i++) {
+            randomNumbers.add(random.nextInt(100) + 1); // Случайные числа от 1 до 100
+        }
+
+        // Сортируем список по убыванию
+        Collections.sort(randomNumbers, Collections.reverseOrder());
+
+        // Вывод первых 10 значений
+        System.out.println("Первые 10 значений в убывающем порядке:");
+        for (int i = 0; i < 10; i++) {
+            System.out.println(randomNumbers.get(i));
+        }
+
+        String url = "jdbc:postgresql://localhost:5432/postgres?charSet=UTF8"; // Для PostgreSQL заменить на "jdbc:postgresql://localhost:5432/testdb"
+        String user = "postgres"; // имя пользователя базы данных
+        String password = "katja..."; // Пароль от базы данных
+
+        // Сохранение в базу данных
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("""
+                    CREATE TABLE IF NOT EXISTS your_table (
+                    id SERIAL PRIMARY KEY, 
+                    number INT
+                    )
+                            """);
+            String sql = "INSERT INTO your_table (number) VALUES (?)"; // Замените на имя вашей таблицы
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                for (int number : randomNumbers) {
+                    preparedStatement.setInt(1, number);
+                    preparedStatement.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+```
+   
+> 30) Разработайте программу, которая заполняет список случайными числами. Количество элементов и числовой диапазон вводятся пользователем. Программа должна проверять, входит ли число (также вводится пользователем) в данный список. Должен быть реализован бинарный поиск. Результаты должны сохраняться в MySQL/PostgreSQL и выводиться оттуда же.   
+
+```
+package org.example;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+
+public class RandomNumberSearch {
+
+    static String url = "jdbc:postgresql://localhost:5432/postgres?charSet=UTF8"; // Для PostgreSQL заменить на "jdbc:postgresql://localhost:5432/testdb"
+    static String user = "postgres"; // имя пользователя базы данных
+    static String password = "katja..."; // Пароль от базы данных
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Введите количество элементов: ");
+        int count = scanner.nextInt();
+        System.out.print("Введите минимальное значение: ");
+        int min = scanner.nextInt();
+        System.out.print("Введите максимальное значение: ");
+        int max = scanner.nextInt();
+
+        List<Integer> numbers = generateRandomNumbers(count, min, max);
+        Collections.sort(numbers); // Сортируем список для бинарного поиска
+
+        System.out.print("Введите число для поиска: ");
+        int searchNumber = scanner.nextInt();
+
+        // Проверка наличия числа с помощью бинарного поиска
+        boolean exists = binarySearch(numbers, searchNumber);
+
+        // Сохранение чисел в БД
+        saveNumbersToDatabase(numbers);
+
+        // Вывод чисел из БД
+        System.out.println("Числа из базы данных:");
+        printNumbersFromDatabase();
+
+        if (exists) {
+            System.out.println("Число " + searchNumber + " найдено в списке.");
+        } else {
+            System.out.println("Число " + searchNumber + " не найдено в списке.");
+        }
+
+        scanner.close();
+    }
+
+    private static List<Integer> generateRandomNumbers(int count, int min, int max) {
+        List<Integer> numbers = new ArrayList<>();
+        Random random = new Random();
+        for (int i = 0; i < count; i++) {
+            numbers.add(random.nextInt((max - min) + 1) + min);
+        }
+        return numbers;
+    }
+
+    private static boolean binarySearch(List<Integer> list, int key) {
+        int left = 0;
+        int right = list.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (list.get(mid) == key) {
+                return true;
+            } else if (list.get(mid) < key) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return false;
+    }
+
+    private static void saveNumbersToDatabase(List<Integer> numbers) {
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+			Statement stmt = connection.createStatement();
+            stmt.executeUpdate("""
+                    CREATE TABLE if not exists numbers (
+                     id SERIAL PRIMARY KEY,
+                     number INT NOT NULL
+                    );
+                    """);
+            String sql = "INSERT INTO numbers (number) VALUES (?)";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                for (int number : numbers) {
+                    pstmt.setInt(1, number);
+                    pstmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void printNumbersFromDatabase() {
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT number FROM numbers";
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    System.out.println(rs.getInt("number"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+```
+   
+> 31) На основе класса BitSet разработайте программу для реализации битовых операций AND, OR, XOR, а также маскирования.   
+
+```
+import java.util.BitSet;
+import java.util.Scanner;
+
+public class BitSetOperations {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Ввод двух чисел
+        System.out.print("Введите первое число: ");
+        int firstNumber = scanner.nextInt();
+
+        System.out.print("Введите второе число: ");
+        int secondNumber = scanner.nextInt();
+
+        // Создание BitSet для каждого числа
+        BitSet firstBitSet = toBitSet(firstNumber);
+        BitSet secondBitSet = toBitSet(secondNumber);
+
+        // Выполнение операций
+        BitSet andResult = (BitSet) firstBitSet.clone();
+        andResult.and(secondBitSet);
+
+        BitSet orResult = (BitSet) firstBitSet.clone();
+        orResult.or(secondBitSet);
+
+        BitSet xorResult = (BitSet) firstBitSet.clone();
+        xorResult.xor(secondBitSet);
+
+        // Маскирование (можем использовать любое число для маски, например, 3)
+        BitSet mask = toBitSet(3); // Пример маски: 3 (0011)
+        BitSet maskedFirst = (BitSet) firstBitSet.clone();
+        maskedFirst.and(mask);
+        BitSet maskedSecond = (BitSet) secondBitSet.clone();
+        maskedSecond.and(mask);
+
+        // Вывод результатов
+        System.out.println("Результат AND: " + bitSetToInt(andResult));
+        System.out.println("Результат OR: " + bitSetToInt(orResult));
+        System.out.println("Результат XOR: " + bitSetToInt(xorResult));
+        System.out.println("Первое число после маскирования: " + bitSetToInt(maskedFirst));
+        System.out.println("Второе число после маскирования: " + bitSetToInt(maskedSecond));
+
+        scanner.close();
+    }
+
+    // Метод для преобразования числа в BitSet
+    private static BitSet toBitSet(int number) {
+        BitSet bitSet = new BitSet();
+        int index = 0;
+        while (number > 0) {
+            if ((number & 1) == 1) {
+                bitSet.set(index);
+            }
+            number >>= 1;
+            index++;
+        }
+        return bitSet;
+    }
+
+    // Метод для преобразования BitSet обратно в число
+    private static int bitSetToInt(BitSet bitSet) {
+        int result = 0;
+        for (int i = 0; i < bitSet.size(); i++) {
+            if (bitSet.get(i)) {
+                result |= (1 << i);
+            }
+        }
+        return result;
+    }
+}
+
+```
+> 32) Напишите программу, которая получает в качестве входных данных два числа. Эти числа являются количество строк и столбцов двумерной коллекции целых чисел. Далее элементы заполняются случайными числами и выводятся в консоль в виде таблицы.   
+
+```
+import java.util.Random;
+import java.util.Scanner;
+
+public class RandomMatrix {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Random random = new Random();
+
+        System.out.print("Введите количество строк: ");
+        int rows = scanner.nextInt();
+
+        System.out.print("Введите количество столбцов: ");
+        int cols = scanner.nextInt();
+
+        int[][] matrix = new int[rows][cols];
+
+        // Заполняем матрицу случайными числами
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                matrix[i][j] = random.nextInt(100); // Случайные числа от 0 до 99
+            }
+        }
+
+        // Выводим матрицу в консоль
+        System.out.println("Сгенерированная матрица:");
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                System.out.print(matrix[i][j] + "\t"); // \t для табуляции
+            }
+            System.out.println(); // Переход на новую строку после каждой строки матрицы
+        }
+
+        scanner.close();
+    }
+}
+
+
+```
+> 33) Разработайте программу, которая получает в качестве параметра два числа – количество строк и столбцов двумерной коллекции целых чисел. Коллекция заполняется случайными числами, после чего на экран выводятся максимальное и минимальное значения с индексами ячеек.   
+
+простой способ(входные данные заданы в программе)   
+```
+import java.util.Random;
+
+public class MatrixMinMax {
+    public static void main(String[] args) {
+        // Задаем количество строк и столбцов
+        int rows = 5; // Количество строк
+        int cols = 4; // Количество столбцов
+
+        // Создаем двумерный массив и заполняем случайными числами
+        int[][] matrix = new int[rows][cols];
+        Random random = new Random();
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                matrix[i][j] = random.nextInt(100); // Случайные числа от 0 до 99
+            }
+        }
+
+        // Выводим матрицу
+        System.out.println("Сгенерированная матрица:");
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                System.out.print(matrix[i][j] + "\t");
+            }
+            System.out.println();
+        }
+
+        // Находим минимальное и максимальное значения и их индексы
+        int min = matrix[0][0];
+        int max = matrix[0][0];
+        int minRow = 0, minCol = 0;
+        int maxRow = 0, maxCol = 0;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (matrix[i][j] < min) {
+                    min = matrix[i][j];
+                    minRow = i;
+                    minCol = j;
+                }
+                if (matrix[i][j] > max) {
+                    max = matrix[i][j];
+                    maxRow = i;
+                    maxCol = j;
+                }
+            }
+        }
+
+        // Выводим результаты
+        System.out.println("\nМинимальное значение: " + min + " на позиции (" + minRow + ", " + minCol + ")");
+        System.out.println("Максимальное значение: " + max + " на позиции (" + maxRow + ", " + maxCol + ")");
+    }
+}
+
+```
+сложнее способ(пользователь вводит с клавы входные данные)   
+```
+import java.util.Random;
+import java.util.Scanner;
+
+public class MatrixMinMax {
+    public static void main(String[] args) {
+
+        Scanner scanner = new Scanner(System.in);
+
+        // Ввод количества строк и столбцов с клавиатуры
+        System.out.print("Введите количество строк: ");
+        int rows = scanner.nextInt();
+        System.out.print("Введите количество столбцов: ");
+        int cols = scanner.nextInt();
+
+
+        // Создаем двумерный массив и заполняем случайными числами
+        int[][] matrix = new int[rows][cols];
+        Random random = new Random();
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                matrix[i][j] = random.nextInt(100); // Случайные числа от 0 до 99
+            }
+        }
+
+        // Выводим матрицу
+        System.out.println("Сгенерированная матрица:");
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                System.out.print(matrix[i][j] + "\t");
+            }
+            System.out.println();
+        }
+
+        // Находим минимальное и максимальное значения и их индексы
+        int min = matrix[0][0];
+        int max = matrix[0][0];
+        int minRow = 0, minCol = 0;
+        int maxRow = 0, maxCol = 0;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (matrix[i][j] < min) {
+                    min = matrix[i][j];
+                    minRow = i;
+                    minCol = j;
+                }
+                if (matrix[i][j] > max) {
+                    max = matrix[i][j];
+                    maxRow = i;
+                    maxCol = j;
+                }
+            }
+        }
+
+        // Выводим результаты
+        System.out.println("\nМинимальное значение: " + min + " на позиции (" + minRow + ", " + minCol + ")");
+        System.out.println("Максимальное значение: " + max + " на позиции (" + maxRow + ", " + maxCol + ")");
+    }
+}
+
+```
+   
+> 34) Разработайте программу, в которой создайте две коллекции с именами людей (строковые переменные). Результат сохранить в MySQL/PostgreSQL. Затем последовательно выводите в консоль имена.   
+
+```
+package org.example;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class PeopleNames {
+
+    static String url = "jdbc:postgresql://localhost:5432/postgres?charSet=UTF8"; // Для PostgreSQL заменить на "jdbc:postgresql://localhost:5432/testdb"
+    static String user = "postgres"; // имя пользователя базы данных
+    static String password = "katja..."; // Пароль от базы данных
+
+    public static void main(String[] args) {
+        List<String> collection1 = new ArrayList<>(Arrays.asList("Alice", "Bob", "Charlie"));
+        List<String> collection2 = new ArrayList<>(Arrays.asList("David", "Eva", "Frank"));
+
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            saveNamesToDatabase(connection, collection1);
+            saveNamesToDatabase(connection, collection2);
+
+            System.out.println("имена из базы данных:");
+            retrieveAndDisplayNames(connection);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void saveNamesToDatabase(Connection connection, List<String> names) throws SQLException {
+        Statement stmt = connection.createStatement();
+        stmt.executeUpdate("""   
+                CREATE TABLE IF NOT EXISTS names (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(100)
+                        );
+                        """);
+        String sql = "INSERT INTO names (name) VALUES (?)";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            for (String name : names) {
+                preparedStatement.setString(1, name);
+                preparedStatement.executeUpdate();
+            }
+        }
+    }
+
+    private static void retrieveAndDisplayNames(Connection connection) throws SQLException {
+        String sql = "SELECT name FROM names";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+            while (resultSet.next()) {
+                String name = resultSet.getString("name");
+                System.out.println(name);
+            }
+        }
+    }
+}
+
+
+```
+   
+> 35) Напишите программу, которая реализует класс Matrix и следующие методы:   
+
+- Сложение и вычитание матриц.   
+- Умножение матрицы на число.   
+- Произведение двух матриц.   
+- Транспонированная матрица.   
+- Возведение матрицы в степень.   
+- Если метод, возвращает матрицу, то он должен возвращать новый объект, а не менять базовый.   
+   
+```
+import java.util.Arrays;
+
+public class Matrix {
+    private final int rows;
+    private final int cols;
+    private final double[][] data;
+
+    // Конструктор
+    public Matrix(int rows, int cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.data = new double[rows][cols];
+    }
+
+    // Конструктор с начальными данными
+    public Matrix(double[][] data) {
+        this.rows = data.length;
+        this.cols = data[0].length;
+        this.data = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            if (data[i].length != cols) {
+                throw new IllegalArgumentException("Все строки должны быть одинаковой длины");
+            }
+            System.arraycopy(data[i], 0, this.data[i], 0, cols);
+        }
+    }
+
+    // Сложение двух матриц
+    public Matrix add(Matrix other) {
+        if (this.rows != other.rows || this.cols != other.cols) {
+            throw new IllegalArgumentException("Размеры матриц должны совпадать");
+        }
+        double[][] result = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = this.data[i][j] + other.data[i][j];
+            }
+        }
+        return new Matrix(result);
+    }
+
+    // Вычитание двух матриц
+    public Matrix subtract(Matrix other) {
+        if (this.rows != other.rows || this.cols != other.cols) {
+            throw new IllegalArgumentException("Размеры матриц должны совпадать");
+        }
+        double[][] result = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = this.data[i][j] - other.data[i][j];
+            }
+        }
+        return new Matrix(result);
+    }
+
+    // Умножение на скаляр
+    public Matrix multiply(double scalar) {
+        double[][] result = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i][j] = this.data[i][j] * scalar;
+            }
+        }
+        return new Matrix(result);
+    }
+
+    // Умножение матриц
+    public Matrix multiply(Matrix other) {
+        if (this.cols != other.rows) {
+            throw new IllegalArgumentException("Размеры матриц несовместимы для умножения");
+        }
+        double[][] result = new double[this.rows][other.cols];
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < other.cols; j++) {
+                for (int k = 0; k < this.cols; k++) {
+                    result[i][j] += this.data[i][k] * other.data[k][j];
+                }
+            }
+        }
+        return new Matrix(result);
+    }
+
+    // Транспонирование матрицы
+    public Matrix transpose() {
+        double[][] result = new double[cols][rows];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[j][i] = this.data[i][j];
+            }
+        }
+        return new Matrix(result);
+    }
+
+    // Возведение матрицы в степень (только для квадратных матриц)
+    public Matrix power(int exponent) {
+        if (rows != cols) {
+            throw new IllegalArgumentException("Матрица должна быть квадратной");
+        }
+        if (exponent < 0) {
+            throw new IllegalArgumentException("Степень должна быть неотрицательной");
+        }
+        Matrix result = identity(rows);
+        Matrix base = this;
+
+        while (exponent > 0) {
+            if (exponent % 2 == 1) {
+                result = result.multiply(base);
+            }
+            base = base.multiply(base);
+            exponent /= 2;
+        }
+
+        return result;
+    }
+
+    // Создание единичной матрицы
+    public static Matrix identity(int size) {
+        double[][] identity = new double[size][size];
+        for (int i = 0; i < size; i++) {
+            identity[i][i] = 1;
+        }
+        return new Matrix(identity);
+    }
+
+    // Переопределение метода toString для лучшей визуализации
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (double[] row : data) {
+            sb.append(Arrays.toString(row)).append("\n");
+        }
+        return sb.toString();
+    }
+
+    public static void main(String[] args) {
+        double[][] data1 = {
+                {1, 2},
+                {3, 4}
+        };
+        double[][] data2 = {
+                {5, 6},
+                {7, 8}
+        };
+
+        Matrix matrix1 = new Matrix(data1);
+        Matrix matrix2 = new Matrix(data2);
+
+        System.out.println("Матрица 1:");
+        System.out.println(matrix1);
+
+        System.out.println("Матрица 2:");
+        System.out.println(matrix2);
+
+        System.out.println("Сложение:");
+        System.out.println(matrix1.add(matrix2));
+
+        System.out.println("Вычитание:");
+        System.out.println(matrix1.subtract(matrix2));
+
+        System.out.println("Умножение на скаляр (2):");
+        System.out.println(matrix1.multiply(2));
+
+        System.out.println("Умножение матриц:");
+        System.out.println(matrix1.multiply(matrix2));
+
+        System.out.println("Транспонирование матрицы 1:");
+        System.out.println(matrix1.transpose());
+
+        System.out.println("Матрица 1 в степени 2:");
+        System.out.println(matrix1.power(2));
+    }
+}
+
+```
+> 36) Разработать программу для поочередной обработки текстовых файлов. Файлы созданы со следующими именами: n.txt, где n – натуральное число. В файлах записаны: в первой строке     одно число с плавающей запятой, во второй строке – второе число. Пользователь вводит название файла и требуемую операцию над числами (сложение, умножение, разность). Результат выводится на экран и файл n_out.txt.   
+
+```
+import java.io.File;
+import java.nio.file.Files;
+import java.util.Scanner;
+
+//создайте файл 1.txt в корне папки проекта !!
+
+public class FileProcessor {
+    public static void main(String[] args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+
+        // Ввод имени файла
+        System.out.print("Введите имя файла (например, 1.txt): ");
+        String inputFile = scanner.nextLine();
+
+        // Проверка существования файла
+        File file = new File(inputFile);
+        if (!file.exists()) {
+            System.out.println("Файл не существует.");
+            return;
+        }
+
+        // Ввод операции
+        System.out.print("Введите операцию (1 - сложение, 2 - умножение, 3 - разность): ");
+        int operationChoice = scanner.nextInt();
+
+        // Чтение чисел из файла
+        String[] lines = Files.readAllLines(file.toPath()).toArray(new String[0]);
+        if (lines.length < 2) {
+            System.out.println("В файле недостаточно данных.");
+            return;
+        }
+
+        double num1 = Double.parseDouble(lines[0].trim());
+        double num2 = Double.parseDouble(lines[1].trim());
+
+        double result = 0;
+        String operation = "";
+
+        // Выполнение операции
+        switch (operationChoice) {
+            case 1:
+                result = num1 + num2;
+                operation = "сложение";
+                break;
+            case 2:
+                result = num1 * num2;
+                operation = "умножение";
+                break;
+            case 3:
+                result = num1 - num2;
+                operation = "разность";
+                break;
+            default:
+                System.out.println("Неверный выбор операции.");
+                return;
+        }
+
+        // Округление результата до двух знаков после запятой
+        result = Math.round(result * 100.0) / 100.0;
+
+        // Вывод результата на экран
+        System.out.println("Результат операции (" + operation + "): " + result);
+
+        // Запись результата в файл n_out.txt
+        String outputFile = inputFile.replace(".txt", "_out.txt");
+        String resultText = "Результат операции (" + operation + "): " + result;
+
+        Files.write(new File(outputFile).toPath(), resultText.getBytes());
+
+        System.out.println("Результат сохранен в файл: " + outputFile);
+    }
+}
+
+```
+> 37) Написать приложение для сложения, вычитания, умножения, деления, возведения в степень логарифмов. Программа должна выполнять ввод данных, проверку правильности введенных данных, выдачу сообщений в случае ошибок. Результат выводится на экран и записывается в файл.   
+
+короткая программа:   
+```
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class Calculator {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Добро пожаловать в калькулятор логарифмов!");
+
+        try (FileWriter writer = new FileWriter("result.txt", true)) {
+            while (true) {
+                System.out.println("Выберите операцию:");
+                System.out.println("1 - Сложение логарифмов");
+                System.out.println("2 - Вычитание логарифмов");
+                System.out.println("3 - Умножение логарифмов");
+                System.out.println("4 - Деление логарифмов");
+                System.out.println("5 - Логарифм");
+                System.out.println("0 - Выход");
+
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    System.out.println("Выход из программы. До свидания!");
+                    break;
+                }
+
+                try {
+                    System.out.println("Введите основание логарифма:");
+                    double base = scanner.nextDouble();
+                    if (base <= 0 || base == 1) {
+                        throw new IllegalArgumentException("Основание логарифма должно быть положительным и не равно 1.");
+                    }
+
+                    System.out.println("Введите аргумент логарифма:");
+                    double argument = scanner.nextDouble();
+                    if (argument <= 0) {
+                        throw new IllegalArgumentException("Аргумент логарифма должен быть положительным.");
+                    }
+
+                    double logValue1 = Math.log(argument) / Math.log(base);
+                    double result = logValue1;
+
+                    if (choice != 5) {
+                        System.out.println("Введите основание второго логарифма:");
+                        double base2 = scanner.nextDouble();
+                        System.out.println("Введите аргумент второго логарифма:");
+                        double argument2 = scanner.nextDouble();
+                        double logValue2 = Math.log(argument2) / Math.log(base2);
+
+                        switch (choice) {
+                            case 1 -> result = logValue1 + logValue2;
+                            case 2 -> result = logValue1 - logValue2;
+                            case 3 -> result = logValue1 * logValue2;
+                            case 4 -> {
+                                if (logValue2 == 0) throw new ArithmeticException("Деление на ноль невозможно.");
+                                result = logValue1 / logValue2;
+                            }
+                            default -> System.out.println("Некорректный выбор операции.");
+                        }
+                    }
+
+                    System.out.printf("Результат: %.4f\n", result);
+                    writer.write(String.format("Результат операции: %.4f\n", result));
+                    writer.flush();
+
+                } catch (Exception e) {
+                    System.out.println("Ошибка: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Ошибка записи в файл: " + e.getMessage());
+        }
+
+        scanner.close();
+    }
+}
+
+```
+
+длинная программа:   
+```
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class Calculator {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Добро пожаловать в калькулятор логарифмов!");
+
+        try (FileWriter writer = new FileWriter("result.txt", true)) {
+            while (true) {
+                System.out.println("Выберите операцию:");
+                System.out.println("1 - Сложение логарифмов");
+                System.out.println("2 - Вычитание логарифмов");
+                System.out.println("3 - Умножение логарифмов");
+                System.out.println("4 - Деление логарифмов");
+                System.out.println("5 - Возведение логарифма в степень");
+                System.out.println("6 - Вычисление логарифма");
+                System.out.println("0 - Выход");
+
+                int choice = scanner.nextInt();
+
+                if (choice == 0) {
+                    System.out.println("Выход из программы. До свидания!");
+                    break;
+                }
+
+                try {
+                    System.out.println("Введите основание логарифма:");
+                    double base = scanner.nextDouble();
+                    if (base <= 0 || base == 1) {
+                        throw new IllegalArgumentException("Основание логарифма должно быть положительным и не равно 1.");
+                    }
+
+                    System.out.println("Введите аргумент логарифма:");
+                    double argument = scanner.nextDouble();
+                    if (argument <= 0) {
+                        throw new IllegalArgumentException("Аргумент логарифма должен быть положительным.");
+                    }
+
+                    double logValue1 = Math.log(argument) / Math.log(base);
+
+                    double logValue2 = 0;
+                    if (choice != 6) { // Для вычисления одного логарифма второе значение не нужно
+                        System.out.println("Введите основание второго логарифма:");
+                        double base2 = scanner.nextDouble();
+                        if (base2 <= 0 || base2 == 1) {
+                            throw new IllegalArgumentException("Основание второго логарифма должно быть положительным и не равно 1.");
+                        }
+
+                        System.out.println("Введите аргумент второго логарифма:");
+                        double argument2 = scanner.nextDouble();
+                        if (argument2 <= 0) {
+                            throw new IllegalArgumentException("Аргумент второго логарифма должен быть положительным.");
+                        }
+
+                        logValue2 = Math.log(argument2) / Math.log(base2);
+                    }
+
+                    double result = 0;
+                    switch (choice) {
+                        case 1:
+                            result = logValue1 + logValue2;
+                            System.out.printf("Результат сложения логарифмов: %.4f\n", result);
+                            break;
+                        case 2:
+                            result = logValue1 - logValue2;
+                            System.out.printf("Результат вычитания логарифмов: %.4f\n", result);
+                            break;
+                        case 3:
+                            result = logValue1 * logValue2;
+                            System.out.printf("Результат умножения логарифмов: %.4f\n", result);
+                            break;
+                        case 4:
+                            if (logValue2 == 0) {
+                                throw new ArithmeticException("Деление на ноль невозможно.");
+                            }
+                            result = logValue1 / logValue2;
+                            System.out.printf("Результат деления логарифмов: %.4f\n", result);
+                            break;
+                        case 5:
+                            System.out.println("Введите степень, в которую нужно возвести логарифм:");
+                            double power = scanner.nextDouble();
+                            result = Math.pow(logValue1, power);
+                            System.out.printf("Результат возведения логарифма в степень: %.4f\n", result);
+                            break;
+                        case 6:
+                            result = logValue1;
+                            System.out.printf("Результат логарифма: %.4f\n", result);
+                            break;
+                        default:
+                            System.out.println("Некорректный выбор операции.");
+                            continue;
+                    }
+
+                    // Запись результата в файл
+                    writer.write(String.format("Результат операции: %.4f\n", result));
+                    writer.flush();
+
+                } catch (Exception e) {
+                    System.out.println("Ошибка: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Ошибка записи в файл: " + e.getMessage());
+        }
+
+        scanner.close();
+    }
+}
+
+```
+> 38) Разработать программу шифровки-дешифровки по алгоритму AES-128. Данные берутся из файла, зашифрованные данные сохраняются в указанный файл.   
+
+```
+// ../input.txt
+Это пример текста, который будет зашифрован с использованием алгоритма AES-128.
+Шифрование данных позволяет защитить конфиденциальную информацию.
+```
+простой способ (пользователь не вводит имя файла):   
+```
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import java.io.File;
+import java.nio.file.Files;
+
+public class AESFileEncryption {
+    public static void main(String[] args) throws Exception {
+        String inputFile = "input.txt";  // Входной файл
+        String encryptedFile = "encrypted.txt";  // Файл с зашифрованными данными
+        String decryptedFile = "decrypted.txt";  // Файл с расшифрованными данными
+
+        // Генерация ключа AES
+        SecretKey secretKey = KeyGenerator.getInstance("AES").generateKey();
+
+        // Чтение данных из входного файла
+        byte[] inputData = Files.readAllBytes(new File(inputFile).toPath());
+
+        // Шифрование данных
+        byte[] encryptedData = encrypt(inputData, secretKey);
+        Files.write(new File(encryptedFile).toPath(), encryptedData);
+
+        // Дешифрование данных
+        byte[] decryptedData = decrypt(encryptedData, secretKey);
+        Files.write(new File(decryptedFile).toPath(), decryptedData);
+
+        System.out.println("Шифрование и дешифрование выполнены успешно.");
+    }
+
+    public static byte[] encrypt(byte[] data, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] decrypt(byte[] data, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        return cipher.doFinal(data);
+    }
+}
+
+```
+теперь сложный способ где пользователь сам вводит имя файла и направление шифрования. кстати тут приходится сохранять ключ в каком то файле, чтобы потом проверить дешифрование после шифрования. так как каждый раз используется разный ключ и мы не можем расшифровать данные которые мы сами же зашифровали.   
+```
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.Base64;
+import java.util.Scanner;
+
+public class AESFileEncryption {
+    public static void main(String[] args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+
+        // Ввод пользователем имени файла
+        System.out.print("Введите имя файла (с расширением .txt): ");
+        String inputFile = scanner.nextLine();
+
+        // Ввод пользователем выбора направления операции
+        System.out.print("Выберите операцию (1 - шифровать, 2 - дешифровать): ");
+        int operationChoice = scanner.nextInt();
+        scanner.nextLine(); // Считываем оставшийся символ новой строки
+
+        // Чтение данных из файла
+        byte[] inputData = Files.readAllBytes(new File(inputFile).toPath());
+
+        if (operationChoice == 1) {
+            // Генерация ключа AES
+            SecretKey secretKey = KeyGenerator.getInstance("AES").generateKey();
+            String encodedKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+
+            // Шифрование данных
+            byte[] encryptedData = encrypt(inputData, secretKey);
+            String encryptedFile = inputFile.replace(".txt", "_encrypted.txt"); // Добавляем суффикс "_encrypted"
+            Files.write(new File(encryptedFile).toPath(), encryptedData);
+
+            // Сохранение ключа в файл
+            String keyFile = inputFile.replace(".txt", "_key.txt");
+            Files.write(new File(keyFile).toPath(), encodedKey.getBytes());
+
+            System.out.println("Данные зашифрованы и сохранены в " + encryptedFile);
+            System.out.println("Ключ сохранен в " + keyFile);
+
+        } else if (operationChoice == 2) {
+            // Ввод пользователем имени файла с ключом
+            System.out.print("Введите имя файла с ключом (с расширением .txt): ");
+            String keyFile = scanner.nextLine();
+
+            // Чтение ключа из файла
+            String encodedKey = new String(Files.readAllBytes(new File(keyFile).toPath()));
+            byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
+            SecretKeySpec secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
+            // Дешифрование данных
+            byte[] decryptedData = decrypt(inputData, secretKey);
+            String decryptedFile = inputFile.replace(".txt", "_decrypted.txt"); // Добавляем суффикс "_decrypted"
+            Files.write(new File(decryptedFile).toPath(), decryptedData);
+
+            System.out.println("Данные расшифрованы и сохранены в " + decryptedFile);
+        } else {
+            System.out.println("Неверный выбор операции.");
+        }
+    }
+
+    public static byte[] encrypt(byte[] data, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] decrypt(byte[] data, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        return cipher.doFinal(data);
+    }
+}
+
+```
+> 39) Разработать программу нахождения наибольшего общего делителя двух натуральных чисел. Требуется реализовать рекурсивный и без рекурсии варианты. Результат сохранить в MySQL/PostgreSQL.   
+
+```
+package org.example;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Scanner;
+
+public class GCDProgram {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Ввод двух натуральных чисел
+        System.out.print("Введите первое число: ");
+        int num1 = scanner.nextInt();
+        System.out.print("Введите второе число: ");
+        int num2 = scanner.nextInt();
+
+        // Выбор метода вычисления
+        System.out.print("Выберите метод (1 - рекурсивный, 2 - итеративный): ");
+        int method = scanner.nextInt();
+
+        int gcd;
+
+        if (method == 1) {
+            gcd = gcdRecursive(num1, num2);
+            System.out.println("НОД (рекурсивный): " + gcd);
+        } else if (method == 2) {
+            gcd = gcdIterative(num1, num2);
+            System.out.println("НОД (итеративный): " + gcd);
+        } else {
+            System.out.println("Неверный выбор метода.");
+            scanner.close();
+            return;
+        }
+
+        // Сохранение результата в базу данных
+        saveToDatabase(num1, num2, gcd, method == 1 ? "recursia" : "iteration");
+
+        scanner.close();
+    }
+
+    // Рекурсивный метод нахождения НОД
+    public static int gcdRecursive(int a, int b) {
+        if (b == 0) {
+            return a;
+        }
+        return gcdRecursive(b, a % b);
+    }
+
+    // итеративный метод нахождения НОД
+    public static int gcdIterative(int a, int b) {
+        while (b != 0) {
+            int temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+
+    // Метод для сохранения результата в базу данных
+    public static void saveToDatabase(int num1, int num2, int gcd, String method) {
+        String url = "jdbc:postgresql://localhost:5432/postgres?charSet=UTF8";
+        String user = "postgres";
+        String password = "katja...";
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            createTableIfNotExists(conn);
+
+            String query = "INSERT INTO gcd_results (num1, num2, gcd, method) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, num1);
+                stmt.setInt(2, num2);
+                stmt.setInt(3, gcd);
+                stmt.setString(4, method);
+                stmt.executeUpdate();
+                System.out.println("Результат успешно сохранен в базе данных.");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Ошибка при сохранении в базу данных: " + e.getMessage());
+            e.printStackTrace(); // Стек вызовов для отладки
+        }
+    }
+
+    // Создание таблицы, если она не существует
+    private static void createTableIfNotExists(Connection conn) throws SQLException {
+        String createTableSQL = """
+            CREATE TABLE IF NOT EXISTS gcd_results (
+                id SERIAL PRIMARY KEY,
+                num1 INT NOT NULL,
+                num2 INT NOT NULL,
+                gcd INT NOT NULL,
+                method VARCHAR(50) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """;
+
+        try (Statement stm = conn.createStatement()) {
+            stm.executeUpdate(createTableSQL);
+        }
+    }
+}
+
+
+```
+> 40) Напишите программу, которая каждые 5 секунд отображает на экране данные о времени, прошедшем от начала запуска программы, а другой её поток выводит сообщение каждые 7 секунд. Третий поток выводит на экран сообщение каждые 10 секунд. Программа работает одну минуту, затем останавливается. Все результаты после вывода необходимо сохранить в MySQL/PostgreSQL.   
+
+```
+package com.example.exam;
+
+// Решение Дани, для Ани
+
+import java.sql.*;
+import java.time.Duration;
+import java.time.Instant;
+
+public class Task40MultiThreadedLogger {
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER = "admin";
+    private static final String PASSWORD = "1234";
+
+    public static void main(String[] args) {
+        solution();
+    }
+
+    public static void solution() {
+        createDatabase();
+
+        Instant startTime = Instant.now();
+
+        Thread timeThread = new Thread(() -> {
+            try {
+                while (Duration.between(startTime, Instant.now()).getSeconds() < 60) {
+                    String message = "Прошло " + Duration.between(startTime, Instant.now()).getSeconds() + " секунд с начала запуска.";
+                    System.out.println(message);
+                    saveToDatabase(message);
+                    Thread.sleep(5000);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        Thread messageThread1 = new Thread(() -> {
+            try {
+                while (Duration.between(startTime, Instant.now()).getSeconds() < 60) {
+                    String message = "Сообщение каждые 7 секунд.";
+                    System.out.println(message);
+                    saveToDatabase(message);
+                    Thread.sleep(7000);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        Thread messageThread2 = new Thread(() -> {
+            try {
+                while (Duration.between(startTime, Instant.now()).getSeconds() < 60) {
+                    String message = "Сообщение каждые 10 секунд.";
+                    System.out.println(message);
+                    saveToDatabase(message);
+                    Thread.sleep(10000);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        timeThread.start();
+        messageThread1.start();
+        messageThread2.start();
+
+        try {
+            timeThread.join();
+            messageThread1.join();
+            messageThread2.join();
+            System.out.println("Прошла 1 минута. Завершение работы");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void createDatabase(){
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DROP TABLE IF EXISTS threads; " +
+                    "CREATE TABLE threads (id SERIAL PRIMARY KEY, message TEXT)"
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void saveToDatabase(String message) {
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(
+                     "INSERT INTO threads (message) VALUES (?)"
+             )
+        ) {
+            preparedStatement.setString(1, message);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+```
+package org.example;
+// Решение Кейт
+
+import java.sql.*;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public class MultiThreadedLogger {
+
+    static String url = "jdbc:postgresql://localhost:5432/postgres?charSet=UTF8";
+    static String user = "postgres";
+    static String password = "katja...";
+
+    public static void main(String[] args) {
+        createTable(); // Создаем таблицу при запуске приложения
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+        long startTime = System.currentTimeMillis();
+
+        Runnable task5Seconds = () -> logAndSave("after " + (System.currentTimeMillis() - startTime) / 1000 + " seconds");
+        Runnable task7Seconds = () -> logAndSave("message every 7 seconds");
+        Runnable task10Seconds = () -> logAndSave("message every 10 seconds");
+
+        scheduler.scheduleAtFixedRate(task5Seconds, 0, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(task7Seconds, 0, 7, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(task10Seconds, 0, 10, TimeUnit.SECONDS);
+
+        scheduler.schedule(() -> {
+            scheduler.shutdown();
+            System.out.println("program ends");
+        }, 1, TimeUnit.MINUTES);
+    }
+
+    private static void createTable() {
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("""
+                CREATE TABLE if not exists log (
+                  id SERIAL PRIMARY KEY,
+                  timestamp VARCHAR(255),
+                  message TEXT
+                );
+            """);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void logAndSave(String message) {
+        String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+        System.out.println("[" + timestamp + "] " + message);
+        saveToDatabase(timestamp, message);
+    }
+
+    private static void saveToDatabase(String timestamp, String message) {
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO log (timestamp, message) VALUES (?, ?)";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, timestamp);
+                statement.setString(2, message);
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+```
+> 41) Условие задачи: «Ввести две строки (не менее 50 символов каждая) с клавиатуры. Необходимо вывести на экран две введенных ранее строки, подсчитать и вывести размер длины каждой строки, объединить данные строки в одну, сравнить данные строки и результат сравнения   
+> вывести на экран». По данному условию необходимо реализовать программу с интерактивным консольным меню, (т.е. вывод списка действий по цифрам. При этом при нажатии на цифру у нас должно выполняться определенное действие). При этом в программе данные пункты должны называться следующим образом:   
+
+- Вывести все таблицы из MySQL.   
+- Создать таблицу в MySQL.   
+- Ввести две строки с клавиатуры, результат сохранить в MySQL с последующим выводом в консоль.   
+- Подсчитать размер ранее введенных строк, результат сохранить в MySQL с последующим выводом в консоль.   
+- Объединить две строки в единое целое, результат сохранить в MySQL с последующим выводом в консоль.   
+- Сравнить две ранее введенные строки, результат сохранить в MySQL с последующим выводом в консоль.   
+- Сохранить все данные (вышеполученные результаты) из MySQL в Excel и вывести на экран.   
+   
+```
+package com.example.exam;
+
+import java.sql.*;
+import java.util.Scanner;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class Task41StringOperations {
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER = "admin";
+    private static final String PASSWORD = "1234";
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            createTable(conn); // Создаем таблицу при запуске программы
+
+            while (true) {
+                System.out.println("Выберите действие:");
+                System.out.println("1. Вывести все таблицы из PostgreSQL.");
+                System.out.println("2. Создать таблицу в PostgreSQL.");
+                System.out.println("3. Ввести две строки с клавиатуры и сохранить в PostgreSQL.");
+                System.out.println("4. Подсчитать размер ранее введенных строк и сохранить в PostgreSQL.");
+                System.out.println("5. Объединить две строки и сохранить в PostgreSQL.");
+                System.out.println("6. Сравнить две строки и сохранить результат в PostgreSQL.");
+                System.out.println("7. Сохранить все данные из PostgreSQL в Excel.");
+                System.out.println("0. Выход.");
+
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // Очистка буфера
+
+                switch (choice) {
+                    case 1:
+                        showTables(conn);
+                        break;
+                    case 2:
+                        createTable(conn);
+                        break;
+                    case 3:
+                        inputStringsAndSave(conn, scanner);
+                        break;
+                    case 4:
+                        countStringLengthsAndSave(conn);
+                        break;
+                    case 5:
+                        concatenateStringsAndSave(conn);
+                        break;
+                    case 6:
+                        compareStringsAndSave(conn);
+                        break;
+                    case 7:
+                        saveToExcel(conn);
+                        break;
+                    case 0:
+                        System.out.println("Выход из программы");
+                        return;
+                    default:
+                        System.out.println("Неверный выбор. Попробуйте снова.");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void showTables (Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("select table_name FROM information_schema.tables WHERE table_schema='public'");
+        System.out.println("Таблицы в БД:");
+        while (rs.next()){
+            System.out.println(rs.getString("table_name"));
+        }
+    }
+
+    private static void createTable(Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS string_results (id SERIAL PRIMARY KEY, operation VARCHAR(255), result VARCHAR(255))");
+        System.out.println("Таблица 'string_results' создана или уже существует.");
+    }
+
+    private static void inputStringsAndSave(Connection conn, Scanner scanner) throws SQLException {
+        System.out.print("Введите первую строку (не менее 50 символов): ");
+        String str1 = scanner.nextLine();
+        while (str1.length() < 50) {
+            System.out.print("Слишком короткая строка. Введите снова: ");
+            str1 = scanner.nextLine();
+        }
+
+        System.out.print("Введите вторую строку (не менее 50 символов): ");
+        String str2 = scanner.nextLine();
+        while (str2.length() < 50) {
+            System.out.print("Слишком короткая строка. Введите снова: ");
+            str2 = scanner.nextLine();
+        }
+
+        String query = "INSERT INTO string_results (operation, result) VALUES (?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, "Input Strings");
+            pstmt.setString(2, str1 + " | " + str2);
+            pstmt.executeUpdate();
+            System.out.println("Строки сохранены в БД.");
+        }
+    }
+
+    private static void countStringLengthsAndSave(Connection conn) throws SQLException {
+        String query = "SELECT result FROM string_results WHERE operation = 'Input Strings' ORDER BY id DESC LIMIT 1";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) {
+                String[] strings = rs.getString ("result").split(" \\| ");
+                int length1 = strings[0].length();
+                int length2 = strings[1].length();
+
+                String result = "Длина первой строки: " + length1 + ", Длина второй строки: " + length2;
+                saveResultToDB(conn, "Count String Lengths", result);
+                System.out.println(result);
+            } else {
+                System.out.println("Нет ранее введенных строк для подсчета длины.");
+            }
+        }
+    }
+
+    private static void concatenateStringsAndSave(Connection conn) throws SQLException {
+        String query = "SELECT result FROM string_results WHERE operation = 'Input Strings' ORDER BY id DESC LIMIT 1";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) {
+                String[] strings = rs.getString("result").split(" \\| ");
+                String concatenated = strings[0] + strings[1];
+
+                saveResultToDB(conn, "Concatenate Strings", concatenated);
+                System.out.println("Объединенная строка: " + concatenated);
+            } else {
+                System.out.println("Нет ранее введенных строк для объединения.");
+            }
+        }
+    }
+
+    private static void compareStringsAndSave(Connection conn) throws SQLException {
+        String query = "SELECT result FROM string_results WHERE operation = 'Input Strings' ORDER BY id DESC LIMIT 1";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) {
+                String[] strings = rs.getString("result").split(" \\| ");
+                String comparisonResult = strings[0].equals(strings[1]) ? "Строки равны." : "Строки не равны.";
+
+                saveResultToDB(conn, "Compare Strings", comparisonResult);
+                System.out.println(comparisonResult);
+            } else {
+                System.out.println("Нет ранее введенных строк для сравнения.");
+            }
+        }
+    }
+
+    private static void saveResultToDB(Connection conn, String operation, String result) throws SQLException {
+        String query = "INSERT INTO string_results (operation, result) VALUES (?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, operation);
+            pstmt.setString(2, result);
+            pstmt.executeUpdate();
+            System.out.println("Результат сохранен в БД.");
+        }
+    }
+
+    private static void saveToExcel(Connection conn) throws SQLException {
+        String query = "SELECT * FROM string_results";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query);
+             Workbook workbook = new XSSFWorkbook()) {
+
+            Sheet sheet = workbook.createSheet("Results");
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Операция");
+            headerRow.createCell(1).setCellValue("Результат");
+
+            int rowNum = 1;
+            while (rs.next()) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(rs.getString("operation"));
+                row.createCell(1).setCellValue(rs.getString("result"));
+            }
+
+            try (FileOutputStream fileOut = new FileOutputStream("string_results.xlsx")) {
+                workbook.write(fileOut);
+                System.out.println("Данные сохранены в Excel файл 'string_results.xlsx'.");
+            }
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+> 42) Написать на основе Spring Boot клиент-серверное приложение MyUser, в котором можно управлять данными пользователей из базы данных через веб-интерфейс: имя, фамилия, возраст, номер группы. База данных может быть любой – MySQL, PostgreSQL и т.д. При этом должна быть доступна возможность добавления/удаления/редактирования пользователей.   
+
+Структура проекта   
+  ![Снимок экрана 2025-01-13 в 12.39.47.png](files/snimok-ekrana-2025-01-13-v-12-39-47.png)    
+```
+// Demo1Application
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Demo1Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Demo1Application.class, args);
+	}
+
+}
+
+```
+```
+// MyUser
+package com.example.demo;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@Entity
+public class MyUser {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String surname;
+    private Integer age;
+    private String group_name;
+}
+```
+```
+// UserController
+package com.example.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+
+import java.util.List;
+
+@Controller
+public class UserController {
+    @Autowired
+    private UserService service;
+
+    @RequestMapping("/")
+    public String viewHomePage(Model model) {
+        List<MyUser> users = service.listAll();
+        model.addAttribute("listUsers", users);
+        return "index";
+    }
+
+    @RequestMapping("/new")
+    public String showNewUserForm(Model model) {
+        MyUser user = new MyUser();
+        model.addAttribute("user", user);
+        return "new_user";
+    }
+
+    @RequestMapping(value = "/save", method = RequestMethod.POST)
+    public String saveUser(@ModelAttribute("user") MyUser user) {
+        service.save(user);
+        return "redirect:/";
+    }
+
+    @RequestMapping("/edit/{id}")
+    public ModelAndView showEditUserForm(@PathVariable(name = "id") Long id) {
+        ModelAndView mav = new ModelAndView("edit_user");
+        MyUser user = service.get(id);
+        mav.addObject("user", user);
+        return mav;
+    }
+
+    @RequestMapping("/delete/{id}")
+    public String deleteUser(@PathVariable(name = "id") Long id) {
+        service.delete(id);
+        return "redirect:/";
+    }
+}
+
+```
+```
+// UserRepository
+package com.example.demo;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<MyUser, Long> {
+}
+
+```
+```
+// UserService
+package com.example.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class UserService {
+    @Autowired
+    private UserRepository repo;
+
+    public List<MyUser> listAll() {
+        return repo.findAll();
+    }
+
+    public void save(MyUser myUser) {
+        repo.save(myUser);
+    }
+
+    public MyUser get(Long id) {
+        return repo.findById(id).get();
+    }
+
+    public void delete(Long id) {
+        repo.deleteById(id);
+    }
+}
+```
+```
+EDIT_USER
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Изменение пользователя</title>
+    <style>
+        *{
+            box-sizing: border-box;
+        }
+        a{
+            text-decoration: none;
+            cursor: pointer;
+        }
+        body{
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .container{
+            max-width: 500px;
+            margin-top: 40px;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .title{
+            margin-bottom: 24px;
+            font-size: 20px;
+            line-height: 1.2;
+            font-weight: 600;
+            text-align: center;
+        }
+        .row_wrapper{
+            margin-bottom: 16px;
+        }
+        .label{
+            margin-bottom: 8px;
+        }
+        .input{
+            width: 100%;
+            padding: 8px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+        .invisible-input{
+            width: 0;
+            height: 0;
+            visibility: hidden;
+        }
+        .save_button{
+            display: block;
+            width: 256px;
+            border: none;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+            background-color: #3b82f6;
+            color: #fff;
+            font-size: 17px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .exit_link{
+            display: block;
+            width: 256px;
+            border: none;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+            background-color: #b91c1c;
+            color: #fff;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="title">Изменить пользователя</h1>
+
+    <form action="#" th:action="@{/save}" th:object="${user}" method="post">
+        <div class="row_wrapper">
+            <!-- Id скрыт, но формой передается -->
+            <input class="invisible-input" required type="number" th:field="*{id}" />
+            <div class="label">Имя:</div>
+            <input class="input" required type="text" th:field="*{name}"/>
+        </div>
+        <div class="row_wrapper">
+            <div class="label">Фамилия:</div>
+            <input class="input" required type="text" th:field="*{surname}"/>
+        </div>
+        <div class="row_wrapper">
+            <div class="label">Возраст:</div>
+            <input class="input" required type="number" th:field="*{age}"/>
+        </div>
+        <div class="row_wrapper">
+            <div class="label">Название группы:</div>
+            <input class="input" required type="text" th:field="*{group_name}"/>
+        </div>
+
+        <button type="submit" class="save_button">
+            Сохранить
+        </button>
+        <a href="/" type="submit" class="exit_link">
+            Вернуться назад без сохранения
+        </a>
+    </form>
+</div>
+</body>
+</html>
+
+```
+```
+INDEX
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Таблица MyUser</title>
+    <style>
+        *{
+            box-sizing: border-box;
+        }
+        a{
+            text-decoration: none;
+            cursor: pointer;
+        }
+        body{
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .container{
+            max-width: 1200px;
+            margin-top: 40px;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .title{
+            margin-bottom: 24px;
+            font-size: 30px;
+            line-height: 1.2;
+            text-align: center;
+        }
+        .table{
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+        .table_header-row{
+            background-color: #f3f4f6;
+        }
+        .table_header-cell{
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .table_row:nth-child(odd){
+            background-color: #fff;
+        }
+        .table_row:nth-child(even){
+            background-color: #f9fafb;
+        }
+        .table_row-cell{
+            padding: 8px 16px;
+            border: 1px solid #e5e7eb;
+        }
+        .edit_link{
+            padding: 4px;
+            margin-right: 8px;
+            border-radius: 4px;
+            background-color: #3b82f6;
+            color: #fff;
+        }
+        .save_link{
+            padding: 4px;
+            border-radius: 4px;
+            background-color: #b91c1c;
+            color: #fff;
+        }
+        .new_link{
+            padding: 8px;
+            border-radius: 8px;
+            background-color: #3b82f6;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="title">Таблица MyUser</h1>
+    <table id="my-user-table" class="table">
+        <tr class="table_header-row">
+            <th class="table_header-cell">ID</th>
+            <th class="table_header-cell">Имя</th>
+            <th class="table_header-cell">Фамилия</th>
+            <th class="table_header-cell">Возраст</th>
+            <th class="table_header-cell">Группа</th>
+            <th class="table_header-cell">Действие</th>
+        </tr>
+        <tr th:each="user: ${listUsers}" class="table_row">
+            <td th:text="${user.id}" class="table_row-cell"></td>
+            <td th:text="${user.name}" class="table_row-cell"></td>
+            <td th:text="${user.surname}" class="table_row-cell"></td>
+            <td th:text="${user.age}" class="table_row-cell"></td>
+            <td th:text="${user.group_name}" class="table_row-cell"></td>
+            <td class="table_row-cell">
+                <a th:href="@{'/edit/'+${user.id}}" class="edit_link">Редактировать</a>
+                <a th:href="@{'/delete/'+${user.id}}" class="save_link">Удалить</a>
+            </td>
+        </tr>
+    </table>
+    <a href="/new" class="new_link">Добавить нового пользователя</a>
+</div>
+
+<script>
+    // сортировка таблицы по ID
+    const table = document.getElementById('my-user-table');
+    const rows = Array.from(table.rows).slice(1); // пропускается строка с заголовком
+
+    rows.sort((rowA, rowB) => {
+        const idA = parseInt(rowA.cells[0].textContent);
+        const idB = parseInt(rowB.cells[0].textContent);
+        return idA - idB;
+    });
+
+    rows.forEach(row => table.appendChild(row));
+</script>
+</body>
+</html>
+
+```
+```
+NEW_USER
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Создание пользователя</title>
+    <style>
+        *{
+            box-sizing: border-box;
+        }
+        a{
+            text-decoration: none;
+            cursor: pointer;
+        }
+        body{
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .container{
+            max-width: 500px;
+            margin-top: 40px;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .title{
+            margin-bottom: 24px;
+            font-size: 20px;
+            line-height: 1.2;
+            font-weight: 600;
+            text-align: center;
+        }
+        .row_wrapper{
+            margin-bottom: 16px;
+        }
+        .label{
+            margin-bottom: 8px;
+        }
+        .input{
+            width: 100%;
+            padding: 8px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+        .save_button{
+            display: block;
+            width: 256px;
+            border: none;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+            background-color: #3b82f6;
+            color: #fff;
+            font-size: 17px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .exit_link{
+            display: block;
+            width: 256px;
+            border: none;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+            background-color: #b91c1c;
+            color: #fff;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="title">Создать пользователя</h1>
+
+    <form action="#" th:action="@{/save}" th:object="${user}" method="post">
+        <div class="row_wrapper">
+            <div class="label">Имя:</div>
+            <input class="input" required type="text" th:field="*{name}"/>
+        </div>
+        <div class="row_wrapper">
+            <div class="label">Фамилия:</div>
+            <input class="input" required type="text" th:field="*{surname}"/>
+        </div>
+        <div class="row_wrapper">
+            <div class="label">Возраст:</div>
+            <input class="input" required type="number" th:field="*{age}"/>
+        </div>
+        <div class="row_wrapper">
+            <div class="label">Название группы:</div>
+            <input class="input" required type="text" th:field="*{group_name}"/>
+        </div>
+
+        <button type="submit" class="save_button">
+            Сохранить
+        </button>
+        <a href="/" type="submit" class="exit_link">
+            Вернуться назад без сохранения
+        </a>
+    </form>
+</div>
+</body>
+</html>
+
+
+```
+```
+// application.properties
+spring.application.name=demo1
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+spring.datasource.username=admin
+spring.datasource.password=1234
+
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type=TRACE
+
+spring.security.user.name=root
+spring.security.user.password=root
+spring.security.user.roles=manager
+
+spring.web.resources.add-mappings=true
+
+server.port=5000
+
+```
+```
+// build.gradle
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'org.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+```
+> 43) Написать на основе Spring Boot Security форму для авторизации и регистрации пользователя. При этом после авторизации пользователя должно быть перенаправление на главную страницу. Главная страница должна содержать запись «Hello World!». При этом до авторизации главная страница не должна быть доступна для пользователя.   
+
+![Снимок экрана 2025-01-13 в 19.57.45.png](files/snimok-ekrana-2025-01-13-v-19-57-45.png)    
+```
+//CustomUserDetailsService
+
+package org.example.task_43;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+}
+
+```
+```
+// Task43Application
+
+package org.example.task_43;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Task43Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Task43Application.class, args);
+    }
+
+}
+
+```
+```
+//UserController
+
+package org.example.task_43;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+
+@Controller
+public class UserController {
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+
+    @GetMapping("/register")
+    public String registerForm(Model model) {
+        model.addAttribute("user", new Users());
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String register(Users user) {
+        userService.register(user);
+        return "redirect:/login";
+    }
+
+    @GetMapping("/")
+    public String home() {
+        return "home";
+    }
+}
+```
+```
+// UserRepository
+
+package org.example.task_43;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<Users, Long> {
+    Optional<Users> findByUsername(String username);
+}
+
+```
+```
+// Users
+
+package org.example.task_43;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
+
+@Data
+@Entity
+public class Users implements UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+}
+
+```
+```
+//UserService
+
+package org.example.task_43;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+    @Autowired
+    private UserRepository repo;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+
+    public void register(Users user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        repo.save(user);
+    }
+}
+
+```
+```
+// WebSecurityConfig
+
+package org.example.task_43;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig {
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Bean
+    public static PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable) // Отключение CSRF для простоты (не рекомендуется для production)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/register", "/login").permitAll() // Доступ к этим URL без авторизации
+                        .anyRequest().authenticated() // Остальные запросы требуют авторизации
+                )
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout") // URL для выхода
+                        .logoutSuccessUrl("/login") // Перенаправление после выхода
+                        .permitAll()
+                );
+        return http.build();
+    }
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth
+                .userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder());
+    }
+}
+
+```
+```
+HOME
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Home</title>
+</head>
+<body>
+<h1>Hello World!</h1>
+<a th:href="@{/logout}">Logout</a>
+</body>
+</html>
+
+```
+```
+LOGIN
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login</title>
+</head>
+<body>
+<form th:action="@{/login}" method="post">
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <button type="submit">Login</button>
+</form>
+<p>Don't have an account? <a th:href="@{/register}">Register here</a></p>
+</body>
+</html>
+
+
+```
+```
+REGISTER
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Register</title>
+</head>
+<body>
+<form th:action="@{/register}" method="post">
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username">
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password">
+    </div>
+    <button type="submit">Register</button>
+</form>
+</body>
+</html>
+
+
+```
+```
+// application.properties
+
+spring.application.name=task_43
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+spring.datasource.username=admin
+spring.datasource.password=1234
+
+spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect
+
+spring.jpa.hibernate.ddl-auto=update
+
+
+#spring.security.user.name=root
+#spring.security.user.password=root
+#spring.security.user.roles=manager
+
+
+spring.cache.type=none
+spring.thymeleaf.cache=false
+
+spring.web.resources.add-mappings=true
+server.port=5000
+
+```
+```
+// build.gradle
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'org.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'jakarta.validation:jakarta.validation-api:3.1.0'
+    implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+
+```
+> 44) Разработать MVC-приложение арифметический калькулятор на основе Spring Boot. Применить шаблонизатор Thymeleaf. Все результаты вычисления должны сохраняться и выводиться из MySQL.   
+
+структура:   
+![image.png](files/image.png)    
+application properties   
+```
+spring.application.name=thymeleafCalc
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+spring.datasource.username=postgres
+spring.datasource.password=katja...
+
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type=TRACE
+
+spring.security.user.name=root
+spring.security.user.password=root
+spring.security.user.roles=manager
+
+spring.web.resources.add-mappings=true
+
+server.port=5000
+
+```
+calc   
+```
+package org.example.thymeleafcalc;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
+
+@Setter
+@Getter
+@Entity
+public class Calc {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Double operand1;
+    private Double operand2;
+    private String action;
+    private Double result;
+    private String time;
+}
+```
+controller   
+```
+package org.example.thymeleafcalc;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+
+import java.util.List;
+
+@Controller
+public class CalcController {
+    @Autowired
+    CalcService service;
+
+    @RequestMapping("/")
+    public String viewHomePage(Model model) {
+        List<Calc> history = service.listAll();
+        Calc calc = new Calc();
+        model.addAttribute("listHistory", history);
+        model.addAttribute("calc", calc);
+        return "index";
+    }
+
+    @RequestMapping(value = "/save", method = RequestMethod.POST)
+    public String saveCalc(@ModelAttribute("calc") Calc calc) {
+        service.save(calc);
+        return "redirect:/";
+    }
+}
+
+```
+repository   
+```
+package org.example.thymeleafcalc;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CalcRepository extends JpaRepository<Calc, Long> {
+}
+
+```
+service   
+```
+package org.example.thymeleafcalc;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class CalcService {
+    @Autowired
+    private CalcRepository repo;
+
+    public List<Calc> listAll() {
+        return repo.findAll();
+    }
+
+    public void save(Calc calc) {
+        repo.save(calc);
+    }
+}
+
+```
+application   
+```
+package org.example.thymeleafcalc;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ThymeleafCalcApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ThymeleafCalcApplication.class, args);
+    }
+
+}
+
+```
+index.html   
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Арифметический калькулятор</title>
+
+    <!-- tailwind для стилей -->
+    <!-- <script src="https://cdn.tailwindcss.com"></script>-->
+
+    <!-- либо можно использовать bootstrap, но надо будет везде менять названия классов -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">-->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>-->
+    <style>
+        body {
+            margin: 0 auto;
+            font-family: sans-serif;
+            max-width: 1200px;
+        }
+
+        #calcForm {
+            display: flex;
+            column-gap: 30px;
+        }
+
+        .button {
+            appearance: none;
+            border: none;
+            outline: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: #125da0;
+            color: white;
+            cursor: pointer;
+        }
+
+        .history {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+<h2>Выполнить операцию</h2>
+
+<form id="calcForm" action="#" th:action="@{/save}" th:object="${calc}" method="post">
+
+    <div>
+        <div>Первое число:</div>
+        <input required type="number" step="any" th:field="*{operand1}"/>
+    </div>
+
+    <div>
+        <div>Операция:</div>
+        <select required th:field="*{action}">
+            <option value="+">+</option>
+            <option value="-">-</option>
+            <option value="*">*</option>
+            <option value="/">/</option>
+            <option value="^">^</option>
+        </select>
+    </div>
+
+
+    <div>
+        <div>Второе число:</div>
+        <input required type="number" step="any" th:field="*{operand2}"/>
+    </div>
+
+    <button type="submit" class="button">
+        Сохранить
+    </button>
+</form>
+
+<h2>История операций</h2>
+<div th:each="calc: ${listHistory}" class="history">
+    <span>Операция №
+        <span th:text="${calc.id}"></span>:
+    </span>
+    <span th:text="${calc.operand1}"></span>
+    <span th:text="${calc.action}"></span>
+    <span th:text="${calc.operand2}"></span>
+    <span>=
+            <span th:text="${calc.result}"></span>
+        </span>
+    <p>Время:
+        <span th:text="${calc.time}"></span>
+    </p>
+</div>
+
+<script>
+    const form = document.getElementById('calcForm');
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault(); // предотвращение отправки формы для добавления дополнительных данных
+
+        // значения из полей формы
+        // можно получать по индексу, под 0 встроенный input от thymeleaf для crsf если spring security включен
+        // поэтому если он включен, индексы на один съедут и будет form[1].value, form[2].value и 3
+        const operand1 = parseFloat(form[0].value);
+        const action = form[1].value;
+        const operand2 = parseFloat(form[2].value);
+
+        let result;
+        if (action === '+') {
+            result = operand1 + operand2
+        }
+        if (action === "-") {
+            result = operand1 - operand2
+        }
+        if (action === "*") {
+            result = operand1 * operand2
+        }
+        if (action === "/") {
+            if (operand2 === 0) {
+                alert('На 0 делить нельзя')
+                return
+            }
+            result = operand1 / operand2
+        }
+        if (action === "^") {
+            result = Math.pow(operand1, operand2);
+        }
+
+        // скрытые поля для добавления результата и времени в форму
+        const resultField = document.createElement('input');
+        resultField.type = 'hidden';
+        resultField.name = 'result';
+        resultField.value = result;
+        form.appendChild(resultField);
+
+        const timeField = document.createElement('input');
+        timeField.type = 'hidden';
+        timeField.name = 'time';
+        timeField.value = new Date().toISOString();
+        form.appendChild(timeField);
+
+        form.submit(); // отправка формы
+    });
+</script>
+</body>
+</html>
+```
+> 45) Разработка веб-MVC приложения на основе Spring Boot. Приложение должно генерировать последовательность из 1000 случайных чисел в диапазоне, заданном пользователем, и выводит эти числа на экран и вычисляет их среднее арифметическое.   
+
+итак всем привет. сначала создаем спринг бут проект, туда надо добавить следующие зависимости. но вроде можно без спринг секьюрити   
+![image.png](files/image_t.png)    
+потом мы создаем такую структуру файлов   
+![image.png](files/image_y.png)    
+RandomNumberApplication   
+```
+package org.example.for_exam_sb;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class RandomNumberApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(RandomNumberApplication.class, args);
+	}
+
+}
+
+```
+RandomNumberModel   
+```
+package org.example.for_exam_sb;
+import java.util.Random;
+
+public class RandomNumberModel {
+    private static int[] numbers = new int[1000];
+
+    public static void generateNumbers(int from, int to){
+        Random rand = new Random();
+        for(int i = 0; i < 1000; i++){
+            int number = rand.nextInt(to - from + 1) + from;
+            numbers[i] = number;
+        }
+    }
+
+    public static int[] getNumbers(){
+        return numbers;
+    }
+
+    public static double getMean(){
+        int sum = 0;
+        for(int i = 0; i < 1000; i++){
+            sum += numbers[i];
+        }
+        return (double) sum / 1000;
+    }
+}
+```
+RandomNumberController   
+```
+package org.example.for_exam_sb;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+
+@Controller
+public class RandomNumberController {
+    @RequestMapping("/")
+    public String viewHomePage() {
+        return "index";
+    }
+
+    @RequestMapping("/numbers")
+    public String viewNumbersPage(@RequestParam("from") int from, @RequestParam("to") int to, Model model) {
+        RandomNumberModel.generateNumbers(from, to);
+        model.addAttribute("numbers", RandomNumberModel.getNumbers());
+        model.addAttribute("mean", RandomNumberModel.getMean());
+        return "numbers";
+    }
+}
+
+```
+index.html   
+```
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Сгенирировать случайные числа</title>
+    <style>
+        body{
+            max-width: 1200px;
+            margin: 20px auto;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+<h2>Заполните форму и получите 1000 случайных чисел и их среднее</h2>
+<p>Оба конца включительно</p>
+<form id="numberForm" action="/numbers" method="get">
+    <label for="from">Начало диапазона:</label>
+    <input type="number" id="from" name="from" required>
+    <br>
+    <br>
+    <label for="to">Конец диапазона:</label>
+    <input type="number" id="to" name="to" required>
+    <br>
+    <br>
+    <button type="submit">Получить числа</button>
+</form>
+<script>
+    const form = document.getElementById("numberForm")
+
+    // как только нажимаем на кнопку отправки сработает вот этот прослушиватель события
+    // он проверит на валидность и если не валидно, то не отправит форму
+    form.addEventListener('submit', event => {
+        event.preventDefault(); // оставить отправку формы
+
+        const inputStartValue = +form[0].value; // + -> перевести из строки к числу
+        const inputEndValue = +form[1].value;
+        if (inputEndValue < inputStartValue){
+            alert("Конец диапазона должен быть больше чем начало диапазона")
+            return
+        }
+
+        form.submit() // отправить форму
+    })
+</script>
+</body>
+</html>
+```
+numbers.html   
+```
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Случайные числа</title>
+    <style>
+        body{
+            max-width: 800px;
+            margin: 20px auto;
+            font-family: sans-serif;
+        }
+        ul{
+            max-height: 400px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+<h2>Сгенерированные числа и их среднее значение</h2>
+<p>Среднее значение:
+    <span th:text="${mean}"></span>
+</p>
+
+<p>Числа:</p>
+<ul>
+    <li th:each="number : ${numbers}" th:text="${number}"></li>
+</ul>
+
+<a href="/">Вернуться назад</a>
+</body>
+</html>
+```
+application properties   
+```
+spring.application.name=for_exam_sb
+
+spring.security.user.name=root
+spring.security.user.password=root
+
+```
+> 46) Разработать приложение для работы с локальной базой данных MySQL. Создайте базу данных мобильных телефонов (не менее 10 позиций), со следующими полями: производитель, модель, год выпуска, диагональ экрана. Напишите методы для выполнения запросов к базе данных. Все данные должны выводиться в консоли на экран.   
+
+```
+package org.example;
+
+import java.util.Scanner;
+import java.sql.*;
+
+public class Task46_pgSQL_mobile_phones {
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "postgres";
+
+    public static void main(String[] args) {
+        solution();
+    }
+
+    public static void solution() {
+        createTableIfNotExists();
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("\nВыберите действие:");
+            System.out.println("1 - Показать таблицу");
+            System.out.println("2 - Добавить новую запись");
+            System.out.println("3 - Обновить запись");
+            System.out.println("4 - Удалить запись");
+            System.out.println("0 - Выйти");
+            System.out.print("Ваш выбор: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // очистка буфера после nextInt()
+
+            switch (choice) {
+                case 1 -> displayAllPhones();
+                case 2 -> addNewPhone(scanner);
+                case 3 -> updatePhone(scanner);
+                case 4 -> deletePhone(scanner);
+                case 0 -> {
+                    System.out.println("Выход из программы.");
+                    return;
+                }
+                default -> System.out.println("Неверный выбор. Попробуйте снова.");
+            }
+        }
+    }
+
+    private static void createTableIfNotExists() {
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS phones (" +
+                "id SERIAL PRIMARY KEY, " +
+                "manufacturer VARCHAR(50) NOT NULL, " +
+                "model VARCHAR(50) NOT NULL, " +
+                "year_of_release INTEGER NOT NULL, " +
+                "screen_size DOUBLE PRECISION NOT NULL)";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(createTableQuery);
+            System.out.println("Таблица успешно создана или уже существует.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void addNewPhone(Scanner scanner) {
+        System.out.print("Введите производителя: ");
+        String manufacturer = scanner.nextLine();
+        System.out.print("Введите модель: ");
+        String model = scanner.nextLine();
+        System.out.print("Введите год выпуска: ");
+        int year = scanner.nextInt();
+        System.out.print("Введите диагональ экрана (десят. разделитель - запятая): ");
+        double screenSize = scanner.nextDouble();
+
+        String insertQuery = "INSERT INTO phones (manufacturer, model, year_of_release, screen_size) VALUES (?, ?, ?, ?)";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(insertQuery)) {
+            preparedStatement.setString(1, manufacturer);
+            preparedStatement.setString(2, model);
+            preparedStatement.setInt(3, year);
+            preparedStatement.setDouble(4, screenSize);
+
+            int rowsInserted = preparedStatement.executeUpdate();
+            if (rowsInserted > 0) {
+                System.out.println("Запись успешно добавлена.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void displayAllPhones() {
+        String selectQuery = "SELECT * FROM phones";
+try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(selectQuery)) {
+
+            System.out.println("Список телефонов:");
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String manufacturer = resultSet.getString("manufacturer");
+                String model = resultSet.getString("model");
+                int year = resultSet.getInt("year_of_release");
+                double screenSize = resultSet.getDouble("screen_size");
+
+                System.out.printf("ID: %d | Производитель: %s | Модель: %s | Год выпуска: %d | Диагональ экрана: %.1f%n",
+                        id, manufacturer, model, year, screenSize);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    private static void updatePhone(Scanner scanner) {
+        System.out.print("Введите ID записи, которую хотите обновить: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Очистка буфера после nextInt()
+
+        System.out.print("Введите нового производителя: ");
+        String manufacturer = scanner.nextLine();
+        System.out.print("Введите новую модель: ");
+        String model = scanner.nextLine();
+        System.out.print("Введите новый год выпуска: ");
+        int year = scanner.nextInt();
+        System.out.print("Введите новую диагональ экрана (десят. разделитель - запятая): ");
+        double screenSize = scanner.nextDouble();
+
+        String updateQuery = "UPDATE phones SET manufacturer = ?, model = ?, year_of_release = ?, screen_size = ? WHERE id = ?";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+            preparedStatement.setString(1, manufacturer);
+            preparedStatement.setString(2, model);
+            preparedStatement.setInt(3, year);
+            preparedStatement.setDouble(4, screenSize);
+            preparedStatement.setInt(5, id);
+
+            int rowsUpdated = preparedStatement.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("Запись успешно обновлена.");
+            } else {
+                System.out.println("Запись с указанным ID не найдена.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void deletePhone(Scanner scanner) {
+        System.out.print("Введите ID записи, которую хотите удалить: ");
+        int id = scanner.nextInt();
+
+        String deleteQuery = "DELETE FROM phones WHERE id = ?";
+
+        try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement(deleteQuery)) {
+            preparedStatement.setInt(1, id);
+
+            int rowsDeleted = preparedStatement.executeUpdate();
+            if (rowsDeleted > 0) {
+                System.out.println("Запись успешно удалена.");
+            } else {
+                System.out.println("Запись с указанным ID не найдена.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+> для кати. не удалять   
+
+чтобы создать проект где будет БД, нужно сделать проект gradle.   
+![image.png](files/image_k.png)    
+потом добавить строчку в build.gradle   
+```
+implementation 'org.postgresql:postgresql:42.6.0'
+
+```
+КТО ЗНАЕТ КАК ЕЩЕ ДЕЛАТЬ ПОМОГИТЕЕЕ ДОПИШИТЕ СЮДА   
+   
+</h3>
 <p>I'm hosted with GitHub Pages.</p>
 </body>
 </html>
